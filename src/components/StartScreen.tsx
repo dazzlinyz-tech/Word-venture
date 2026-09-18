@@ -195,7 +195,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
               <span>모험을 함께할 파트너 캐릭터를 선택하세요!</span>
             </div>
             <span className="text-[11px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full">
-              100레벨 전원 해금 도전!
+              100단계 해결 도전!
             </span>
           </div>
 
