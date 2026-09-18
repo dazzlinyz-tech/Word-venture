@@ -439,7 +439,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         </div>
 
         {/* Arena Stage: Left Adventuring Partner Avatar Cheering, Right Marching Word Monsters */}
-        <div className="relative w-full flex-1 min-h-[220px] sm:min-h-[260px] bg-linear-to-b from-sky-100/90 to-emerald-100/90 rounded-3xl p-3 sm:p-5 border-4 border-amber-300/80 shadow-lg flex flex-col justify-between overflow-hidden">
+        <div className="relative w-full flex-1 min-h-[220px] sm:min-h-[260px] bg-linear-to-b from-sky-100/90 to-emerald-100/90 rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 border-3 sm:border-4 border-amber-300/80 shadow-lg flex flex-col justify-between overflow-hidden">
           
           {/* Background whimsical landscape clouds/hills */}
           <div className="absolute inset-0 pointer-events-none opacity-20">
@@ -470,7 +470,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             </div>
 
             {/* Target Meaning Question Card (한글 뜻 제시) */}
-            <div className="flex-1 w-full max-w-md mx-auto text-center bg-white/95 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border-3 border-amber-400 shadow-md">
+            <div className="flex-1 w-full max-w-md mx-auto text-center bg-white/95 backdrop-blur-sm rounded-2xl p-2.5 sm:p-4 border-3 border-amber-400 shadow-md min-w-0">
               
               {/* Question Countdown Bar */}
               <div className="w-full mb-2">
@@ -497,12 +497,12 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Sparkles className="w-4 h-4 text-amber-500 animate-spin" />
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
                 <span className="text-xs sm:text-sm font-extrabold text-amber-800">
                   이 뜻을 가진 몬스터를 처치하세요!
                 </span>
-                <Sparkles className="w-4 h-4 text-amber-500 animate-spin" />
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
               </div>
 
               {/* Polysemy Multi-meaning Badge & Presentation (학습 목표 2) */}
@@ -513,11 +513,11 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                   </div>
                   
                   {/* Meanings shown clearly */}
-                  <div className="flex flex-wrap items-center justify-center gap-2 my-1">
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 my-1">
                     {targetWord.meanings.map((meaning, idx) => (
                       <div
                         key={idx}
-                        className="bg-purple-50 border-2 border-purple-300 text-purple-900 px-3 py-1 rounded-xl text-base sm:text-lg font-black shadow-xs"
+                        className="bg-purple-50 border-2 border-purple-300 text-purple-900 px-2.5 py-1 rounded-xl text-sm sm:text-lg font-black shadow-xs max-w-full break-words"
                       >
                         <span className="text-purple-600 text-xs mr-1 font-bold">뜻 {idx + 1}.</span>
                         {meaning}
@@ -533,8 +533,8 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                 </div>
               ) : (
                 /* Standard single meaning */
-                <div className="my-1">
-                  <div className="inline-block bg-amber-50 border-2 border-amber-300 text-slate-800 px-4 py-1.5 rounded-2xl text-xl sm:text-2xl font-black shadow-inner">
+                <div className="my-1 px-1">
+                  <div className="inline-block max-w-full break-words [overflow-wrap:anywhere] bg-amber-50 border-2 border-amber-300 text-slate-800 px-3 py-1.5 sm:px-5 sm:py-2 rounded-2xl text-lg sm:text-2xl font-black shadow-inner">
                     {targetWord.meanings.join(' / ')}
                   </div>
                 </div>
@@ -562,7 +562,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
               👇 알맞은 영어 단어 몬스터를 터치하세요!
             </div>
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-2xl mx-auto">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-4 max-w-2xl mx-auto w-full">
               {currentMonsters.map(monster => (
                 <MonsterDisplay
                   key={monster.id}

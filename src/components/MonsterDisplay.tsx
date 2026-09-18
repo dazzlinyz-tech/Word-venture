@@ -10,6 +10,15 @@ interface MonsterDisplayProps {
   showSpeakBtn?: boolean;
 }
 
+// Compute responsive font size so long words never spill out of the plaque on small mobile screens
+const getWordFontSize = (text: string) => {
+  const len = text.length;
+  if (len <= 4) return 'text-sm xs:text-base sm:text-xl md:text-2xl';
+  if (len <= 6) return 'text-xs xs:text-sm sm:text-lg md:text-xl';
+  if (len <= 8) return 'text-[11px] xs:text-xs sm:text-base md:text-lg';
+  return 'text-[10px] xs:text-[11px] sm:text-sm md:text-base';
+};
+
 export const MonsterDisplay: React.FC<MonsterDisplayProps> = ({
   monster,
   onClick,
@@ -28,7 +37,7 @@ export const MonsterDisplay: React.FC<MonsterDisplayProps> = ({
     switch (visualType) {
       case 'slime':
         return (
-          <svg viewBox="0 0 100 90" className="w-20 h-18 sm:w-24 sm:h-20 drop-shadow-md">
+          <svg viewBox="0 0 100 90" className="w-14 h-12 xs:w-16 xs:h-14 sm:w-24 sm:h-20 drop-shadow-md mx-auto">
             {/* Slime body */}
             <path
               d="M 50 15 C 25 15 15 35 15 60 C 15 78 30 85 50 85 C 70 85 85 78 85 60 C 85 35 75 15 50 15 Z"
@@ -70,7 +79,7 @@ export const MonsterDisplay: React.FC<MonsterDisplayProps> = ({
 
       case 'bat':
         return (
-          <svg viewBox="0 0 110 90" className="w-22 h-18 sm:w-26 sm:h-20 drop-shadow-md">
+          <svg viewBox="0 0 110 90" className="w-16 h-12 xs:w-18 xs:h-14 sm:w-26 sm:h-20 drop-shadow-md mx-auto">
             {/* Bat Wings */}
             <path d="M 25 45 Q 5 25 5 50 Q 20 65 30 55 Z" fill="#6B21A8" />
             <path d="M 85 45 Q 105 25 105 50 Q 90 65 80 55 Z" fill="#6B21A8" />
@@ -113,7 +122,7 @@ export const MonsterDisplay: React.FC<MonsterDisplayProps> = ({
 
       case 'flame':
         return (
-          <svg viewBox="0 0 100 90" className="w-20 h-18 sm:w-24 sm:h-20 drop-shadow-md">
+          <svg viewBox="0 0 100 90" className="w-14 h-12 xs:w-16 xs:h-14 sm:w-24 sm:h-20 drop-shadow-md mx-auto">
             {/* Fire body */}
             <path
               d="M 50 10 Q 75 35 75 60 Q 75 85 50 85 Q 25 85 25 60 Q 25 40 40 30 Q 30 50 50 35 Q 40 20 50 10 Z"
@@ -150,7 +159,7 @@ export const MonsterDisplay: React.FC<MonsterDisplayProps> = ({
 
       case 'rock':
         return (
-          <svg viewBox="0 0 100 90" className="w-20 h-18 sm:w-24 sm:h-20 drop-shadow-md">
+          <svg viewBox="0 0 100 90" className="w-14 h-12 xs:w-16 xs:h-14 sm:w-24 sm:h-20 drop-shadow-md mx-auto">
             {/* Rock body */}
             <polygon
               points="30,20 70,18 85,45 80,82 20,85 15,48"
@@ -181,7 +190,7 @@ export const MonsterDisplay: React.FC<MonsterDisplayProps> = ({
 
       default: // jelly / cyclops
         return (
-          <svg viewBox="0 0 100 90" className="w-20 h-18 sm:w-24 sm:h-20 drop-shadow-md">
+          <svg viewBox="0 0 100 90" className="w-14 h-12 xs:w-16 xs:h-14 sm:w-24 sm:h-20 drop-shadow-md mx-auto">
             <ellipse cx="50" cy="50" rx="35" ry="32" fill={isWrong ? '#DC2626' : '#EC4899'} />
             <polygon points="50,18 42,4 58,4" fill="#F43F5E" />
             {isDefeated ? (
@@ -210,55 +219,57 @@ export const MonsterDisplay: React.FC<MonsterDisplayProps> = ({
           onClick();
         }
       }}
-      className={`group relative flex flex-col items-center justify-between p-3 rounded-2xl cursor-pointer transition-all duration-300 transform select-none ${
+      className={`group relative flex flex-col items-center justify-between p-1.5 xs:p-2 sm:p-3 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 transform select-none min-w-0 max-w-full overflow-hidden ${
         isDefeated
           ? 'animate-defeated pointer-events-none'
           : isWrong
-          ? 'animate-shake bg-red-100/90 border-4 border-red-500 shadow-xl'
-          : 'bg-white/95 hover:bg-amber-50/90 hover:scale-105 active:scale-95 border-3 border-amber-300 hover:border-amber-500 shadow-md hover:shadow-xl'
+          ? 'animate-shake bg-red-100/90 border-3 sm:border-4 border-red-500 shadow-xl'
+          : 'bg-white/95 hover:bg-amber-50/90 hover:scale-105 active:scale-95 border-2 sm:border-3 border-amber-300 hover:border-amber-500 shadow-md hover:shadow-xl'
       } ${disabled ? 'opacity-80 cursor-not-allowed' : ''}`}
     >
+      {/* Corner Action: Audio Pronunciation Speaker Button (Placed at corner so it never crowds the word box) */}
+      {showSpeakBtn && (
+        <button
+          type="button"
+          onClick={handleSpeak}
+          id={`btn-speak-${word.id}`}
+          className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 z-20 p-1 sm:p-1.5 rounded-full bg-amber-100/90 hover:bg-amber-200 text-amber-900 border border-amber-300 shadow-xs active:scale-90 transition-transform"
+          title="발음 듣기"
+        >
+          <Volume2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+        </button>
+      )}
+
+      {/* Corner Badge: Polysemy Star Badge if multi-meaning word */}
+      {word.isPolysemy && (
+        <div
+          className="absolute top-1 left-1 sm:top-1.5 sm:left-1.5 z-20 px-1.5 py-0.5 rounded-full bg-linear-to-r from-purple-600 to-pink-500 text-white text-[8px] sm:text-[10px] font-black shadow-xs animate-pulse"
+          title="2가지 뜻을 가진 단어!"
+        >
+          2뜻!
+        </div>
+      )}
+
       {/* Monster Creature Avatar */}
       <div className={`transition-transform duration-200 ${isDefeated ? 'scale-75' : 'group-hover:-translate-y-1'}`}>
         {renderMonsterCreature()}
       </div>
 
-      {/* Monster English Word Plaque / Button */}
-      <div className="w-full mt-2 flex flex-col items-center">
-        <div className="w-full bg-linear-to-r from-amber-50 via-yellow-100 to-amber-50 border-2 border-amber-400 rounded-xl px-3 py-2 shadow-inner flex items-center justify-between gap-2">
-          
-          {/* Audio TTS button */}
-          {showSpeakBtn && (
-            <button
-              type="button"
-              onClick={handleSpeak}
-              id={`btn-speak-${word.id}`}
-              className="p-1 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-900 active:scale-90 transition-transform"
-              title="발음 듣기"
-            >
-              <Volume2 className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Word text */}
-          <span className="font-game text-xl sm:text-2xl font-bold tracking-wide text-slate-800 flex-1 text-center">
+      {/* Monster English Word Plaque / Button - Designed to strictly contain word without overflow */}
+      <div className="w-full mt-1.5 sm:mt-2 flex flex-col items-center min-w-0 max-w-full">
+        <div className="w-full bg-linear-to-r from-amber-50 via-yellow-100 to-amber-50 border-2 border-amber-400 rounded-lg sm:rounded-xl px-1 py-1 sm:px-2.5 sm:py-1.5 shadow-inner flex items-center justify-center min-w-0 max-w-full overflow-hidden">
+          <span
+            title={word.word}
+            className={`font-game font-bold tracking-tight text-slate-800 text-center w-full min-w-0 break-words [overflow-wrap:anywhere] leading-tight ${getWordFontSize(word.word)}`}
+          >
             {word.word}
           </span>
-
-          {/* Polysemy Star Badge if multi-meaning word */}
-          {word.isPolysemy && (
-            <span
-              className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-linear-to-r from-purple-500 to-pink-500 text-white shadow-xs animate-pulse"
-              title="2가지 뜻을 가진 단어!"
-            >
-              2뜻!
-            </span>
-          )}
         </div>
 
         {/* Attack hint / tap guide */}
-        <span className="mt-1 text-[11px] font-bold text-amber-800 opacity-80 group-hover:opacity-100">
-          💥 터치해서 물리치기!
+        <span className="mt-1 text-[9px] xs:text-[10px] sm:text-[11px] font-bold text-amber-800 opacity-90 group-hover:opacity-100 text-center leading-tight truncate w-full">
+          <span className="hidden sm:inline">💥 터치해서 물리치기!</span>
+          <span className="sm:hidden">💥 터치 공격!</span>
         </span>
       </div>
     </div>

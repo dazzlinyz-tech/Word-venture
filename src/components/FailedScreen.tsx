@@ -92,14 +92,14 @@ export const FailedScreen: React.FC<FailedScreenProps> = ({
               </button>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-              <div>
-                <span className="font-game text-2xl sm:text-3xl font-black text-slate-800 tracking-wide">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 min-w-0 w-full">
+              <div className="min-w-0 max-w-full text-center sm:text-left">
+                <span className="font-game text-xl sm:text-3xl font-black text-slate-800 tracking-wide break-words">
                   {failedWord.word}
                 </span>
-                <span className="text-xs text-slate-500 ml-2 font-mono">{failedWord.phonetic}</span>
+                <span className="text-xs text-slate-500 ml-2 font-mono whitespace-nowrap">{failedWord.phonetic}</span>
               </div>
-              <div className="text-sm sm:text-base font-extrabold text-amber-900 bg-white px-3 py-1.5 rounded-xl border border-amber-200">
+              <div className="text-sm sm:text-base font-extrabold text-amber-900 bg-white px-3 py-1.5 rounded-xl border border-amber-200 max-w-full break-words text-center">
                 뜻: {failedWord.meanings.join(' / ')}
               </div>
             </div>

@@ -232,21 +232,21 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
                   key={word.id}
                   className="bg-amber-50/70 border-2 border-amber-200 rounded-2xl p-3 flex flex-col justify-between shadow-xs hover:border-amber-400 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-game text-xl font-bold text-slate-800">
+                  <div className="flex items-start justify-between gap-2 min-w-0">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-game text-lg sm:text-xl font-bold text-slate-800 break-words min-w-0">
                           {word.word}
                         </span>
                         {word.isPolysemy && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-600 text-white font-black">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-600 text-white font-black whitespace-nowrap">
                             2가지 뜻!
                           </span>
                         )}
                       </div>
                       
                       {/* Meanings */}
-                      <div className="mt-1 text-xs font-extrabold text-amber-900">
+                      <div className="mt-1 text-xs font-extrabold text-amber-900 break-words">
                         {word.isPolysemy ? (
                           <div className="space-y-0.5">
                             {word.meanings.map((m, idx) => (
