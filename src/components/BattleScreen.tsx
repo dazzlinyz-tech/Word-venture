@@ -454,7 +454,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             <div className="flex flex-col items-center">
               <AvatarDisplay
                 avatarId={avatarId}
-                state={isAvatarCrying ? 'crying' : isAvatarCheering ? 'cheering' : isDanger ? 'danger' : 'cheering'}
+                state={isAvatarCrying ? 'crying' : isAvatarCheering ? 'cheering' : isDanger ? 'danger' : 'idle'}
                 size="lg"
                 showSpeechBubble={true}
                 customSpeechText={

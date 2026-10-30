@@ -114,9 +114,10 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
         <div className="mb-2">
           <AvatarDisplay
             avatarId={stats.avatarId}
-            state="cheering"
+            state="rescued"
             size="xl"
-            showSpeechBubble={false}
+            showSpeechBubble={true}
+            customSpeechText={`${avatar.name.split(' ')[0]}와 함께 스테이지 클리어! 🎉`}
           />
         </div>
 

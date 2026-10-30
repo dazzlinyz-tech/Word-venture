@@ -174,7 +174,7 @@ export default function App() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-900 text-slate-800 antialiased font-sans">
+    <div className="w-full min-h-screen bg-linear-to-b from-sky-200 via-amber-50 to-emerald-100 text-slate-800 antialiased font-sans">
       {currentScreen === 'start' && (
         <StartScreen
           selectedAvatarId={selectedAvatarId}

@@ -22,6 +22,8 @@ export interface AvatarInfo {
   requiredLevel: number; // Level required to unlock (1, 11, 21...)
   unlockLevel?: number;
   reward: CharacterReward;
+  image3d: string;
+  personality?: string;
 }
 
 export interface WordItem {
