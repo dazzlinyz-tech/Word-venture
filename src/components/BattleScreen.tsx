@@ -13,6 +13,7 @@ import {
 } from '../utils/audio';
 import { Volume2, VolumeX, ArrowLeft, Zap, ShieldAlert, Sparkles, Heart, Clock, Crown, MousePointerClick } from 'lucide-react';
 import { setSoundMuted, getSoundMuted } from '../utils/audio';
+import { preloadUpcomingMonstersForStage, preloadInitialBattleMonsters } from '../utils/assetHelper';
 
 interface BattleScreenProps {
   avatarId: AvatarId;
@@ -155,10 +156,14 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     });
 
     setCurrentMonsters(monsters);
+
+    // Predictive background preloader: primes the next stage monsters ahead of time
+    preloadUpcomingMonstersForStage(index);
   }, [questionWords]);
 
-  // Initial load
+  // Initial load: ensure Stage 1 monsters are preloaded into memory immediately
   useEffect(() => {
+    preloadInitialBattleMonsters();
     setupMonstersForIndex(0);
   }, [setupMonstersForIndex]);
 
@@ -675,10 +680,11 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             )}
 
             <div className="grid grid-cols-3 gap-1.5 sm:gap-4 max-w-2xl mx-auto w-full">
-              {currentMonsters.map(monster => (
+              {currentMonsters.map((monster, idx) => (
                 <MonsterDisplay
                   key={monster.id}
                   monster={monster}
+                  cardIndex={idx}
                   onClick={() => handleSelectMonster(monster)}
                   disabled={isProcessing}
                 />

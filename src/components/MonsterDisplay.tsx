@@ -11,6 +11,7 @@ interface MonsterDisplayProps {
   onClick: () => void;
   disabled?: boolean;
   showSpeakBtn?: boolean;
+  cardIndex?: number;
 }
 
 // Compute responsive font size so long words never spill out of the plaque on small mobile screens
@@ -26,11 +27,10 @@ export const MonsterDisplay: React.FC<MonsterDisplayProps> = ({
   monster,
   onClick,
   disabled = false,
-  showSpeakBtn = true
+  showSpeakBtn = true,
+  cardIndex = 0
 }) => {
   const { word, visualType, isDefeated, isWrong, isBoss } = monster;
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
 
   // Get species info, fallback to slime
   const species = MONSTER_SPECIES[visualType] || MONSTER_SPECIES.slime;
@@ -53,12 +53,13 @@ export const MonsterDisplay: React.FC<MonsterDisplayProps> = ({
   return (
     <div
       id={`monster-card-${monster.id}`}
+      style={{ animationDelay: `${cardIndex * 45}ms` }}
       onClick={() => {
         if (!disabled && !isDefeated) {
           onClick();
         }
       }}
-      className={`group relative flex flex-col items-center justify-between p-1.5 xs:p-2 sm:p-3 rounded-2xl sm:rounded-3xl cursor-pointer transition-all duration-300 transform select-none min-w-0 max-w-full overflow-hidden ${
+      className={`group relative flex flex-col items-center justify-between p-1.5 xs:p-2 sm:p-3 rounded-2xl sm:rounded-3xl cursor-pointer transition-all duration-300 transform select-none min-w-0 max-w-full overflow-hidden animate-monster-pop ${
         isDefeated
           ? 'animate-defeated pointer-events-none'
           : isWrong

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AvatarId, GameMode } from '../types';
 import { AVATARS } from '../data/avatars';
-import { AVATAR_PUBLIC_FALLBACKS } from '../utils/assetHelper';
+import { AVATAR_PUBLIC_FALLBACKS, preloadInitialBattleMonsters } from '../utils/assetHelper';
 import { AvatarDisplay } from './AvatarDisplay';
 import { SmartImage } from './SmartImage';
 import { playClickSound, setSoundMuted, getSoundMuted, playWrongAnswerSound } from '../utils/audio';
@@ -90,6 +90,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const [studentName, setStudentNameState] = useState(getStudentName());
 
   const highestReached = Math.max(level, maxUnlockedLevel);
+
+  // Preload initial battle stage monsters as soon as StartScreen is active
+  React.useEffect(() => {
+    preloadInitialBattleMonsters();
+  }, []);
 
   const handleToggleSound = () => {
     const next = !isMuted;
@@ -482,7 +487,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         <button
           type="button"
           id="btn-start-game-main"
+          onMouseEnter={() => preloadInitialBattleMonsters()}
+          onTouchStart={() => preloadInitialBattleMonsters()}
           onClick={() => {
+            preloadInitialBattleMonsters();
             playClickSound();
             onStartGame();
           }}
