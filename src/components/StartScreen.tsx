@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { AvatarId, GameMode } from '../types';
 import { AVATARS } from '../data/avatars';
+import { AVATAR_PUBLIC_FALLBACKS } from '../utils/assetHelper';
 import { AvatarDisplay } from './AvatarDisplay';
+import { SmartImage } from './SmartImage';
 import { playClickSound, setSoundMuted, getSoundMuted, playWrongAnswerSound } from '../utils/audio';
 import {
   Volume2,
@@ -22,8 +24,12 @@ import {
   Bell,
   Feather,
   Gem,
-  Crown
+  Crown,
+  FileSpreadsheet,
+  User
 } from 'lucide-react';
+import { GoogleSheetsModal } from './GoogleSheetsModal';
+import { getStudentName } from '../services/googleSheets';
 
 export const RewardMiniIcon: React.FC<{ iconType: string; emoji: string; className?: string }> = ({
   iconType,
@@ -80,6 +86,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   const [isMuted, setIsMuted] = useState(getSoundMuted());
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [lockAlertMsg, setLockAlertMsg] = useState<string | null>(null);
+  const [showSheetsModal, setShowSheetsModal] = useState(false);
+  const [studentName, setStudentNameState] = useState(getStudentName());
 
   const highestReached = Math.max(level, maxUnlockedLevel);
 
@@ -111,8 +119,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({
     onSelectMode(mode);
   };
 
-  const currentAvatar = AVATARS[selectedAvatarId] || AVATARS.leo;
-  const allAvatarIds: AvatarId[] = ['leo', 'mina', 'tori', 'pupu', 'robi', 'luna', 'chichi', 'kaya', 'coco', 'sol'];
+  const currentAvatar = AVATARS[selectedAvatarId] || AVATARS.robi;
+  const allAvatarIds: AvatarId[] = ['robi', 'chichi', 'coco', 'mina', 'luna', 'pupu', 'leo', 'kaya', 'tori', 'sol'];
 
   return (
     <div className="min-h-screen w-full bg-linear-to-b from-sky-200 via-amber-50/90 to-emerald-100 flex flex-col justify-between items-center p-3 sm:p-6 select-none overflow-x-hidden relative">
@@ -175,7 +183,24 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            id="btn-sheets-modal"
+            onClick={() => {
+              playClickSound();
+              setShowSheetsModal(true);
+            }}
+            className="p-2 sm:px-3 sm:py-2 rounded-2xl bg-white/95 hover:bg-white text-blue-800 shadow-sm border-2 border-blue-400 active:scale-95 transition-all flex items-center gap-1.5"
+            title="구글 시트 연동 및 학생 기록 관리"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="hidden sm:inline text-xs font-black text-blue-900">구글 시트</span>
+            <span className="text-[11px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-lg font-extrabold max-w-[75px] truncate">
+              {studentName}
+            </span>
+          </button>
+
           <button
             type="button"
             id="btn-how-to-play"
@@ -300,17 +325,23 @@ export const StartScreen: React.FC<StartScreenProps> = ({
 
                   {/* 3D Figurine Vessel with Pedestal */}
                   <div className="relative w-full aspect-square flex flex-col items-center justify-center mb-1">
-                    <img
+                    <SmartImage
                       src={av.image3d}
                       alt={av.name}
-                      referrerPolicy="no-referrer"
-                      className={`w-full h-full object-cover rounded-xl transition-all duration-300 ${
+                      fallbackSrcs={AVATAR_PUBLIC_FALLBACKS[id]}
+                      className="w-full h-full rounded-xl"
+                      imgClassName={`w-full h-full object-cover rounded-xl transition-all duration-300 ${
                         isSelected
                           ? 'animate-joy-jump scale-105 filter drop-shadow-md'
                           : isLocked
                           ? 'opacity-70 grayscale-[35%] group-hover:opacity-85 group-hover:grayscale-0'
                           : 'group-hover:scale-105'
                       }`}
+                      fallbackComponent={
+                        <div className={`w-full h-full rounded-xl flex items-center justify-center bg-linear-to-b ${av.bgGradient}`}>
+                          <span className="text-2xl sm:text-3xl">{av.emoji}</span>
+                        </div>
+                      }
                     />
 
                     {/* Figurine Pedestal Shadow */}
@@ -348,11 +379,17 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           <div className="mt-3.5 bg-linear-to-r from-amber-100/90 via-yellow-50 to-orange-100/90 border-2 border-amber-300 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
             <div className="flex items-center gap-3">
               <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-md">
-                <img
+                <SmartImage
                   src={currentAvatar.image3d}
                   alt={currentAvatar.name}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
+                  fallbackSrcs={AVATAR_PUBLIC_FALLBACKS[selectedAvatarId]}
+                  className="w-full h-full rounded-2xl"
+                  imgClassName="w-full h-full object-cover"
+                  fallbackComponent={
+                    <div className={`w-full h-full flex items-center justify-center bg-linear-to-b ${currentAvatar.bgGradient}`}>
+                      <span className="text-2xl">{currentAvatar.emoji}</span>
+                    </div>
+                  }
                 />
               </div>
 
@@ -461,6 +498,13 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       <footer className="relative z-10 w-full max-w-4xl text-center text-xs font-bold text-amber-950/80 mt-2">
         초등학교 저학년을 위한 프리미엄 3D 캐릭터 100단계 영어 모험
       </footer>
+
+      {/* Google Sheets CRUD & Apps Script Modal */}
+      <GoogleSheetsModal
+        isOpen={showSheetsModal}
+        onClose={() => setShowSheetsModal(false)}
+        onNameChange={newName => setStudentNameState(newName)}
+      />
 
     </div>
   );

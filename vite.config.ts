@@ -5,7 +5,14 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
     plugins: [react(), tailwindcss()],
+    define: {
+      'process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL': JSON.stringify(
+        process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL ||
+        'https://script.google.com/macros/s/AKfycbxZk7dmZY0VrsPlCgMNQXan9czt2AFl3LZbYssTFxILcTYLx-IKJXnHIdWyVxy1ycakcA/exec'
+      ),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

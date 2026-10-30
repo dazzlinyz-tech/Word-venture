@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { AvatarId, WordItem, BattleMonster, MonsterVisualType } from '../types';
+import { AvatarId, WordItem, BattleMonster, MonsterVisualType, SentenceTapStat } from '../types';
 import { AvatarDisplay } from './AvatarDisplay';
 import { MonsterDisplay } from './MonsterDisplay';
 import { ELEMENTARY_WORDS, getDistractorChoices } from '../data/words';
@@ -11,7 +11,7 @@ import {
   speakWord,
   playAdvanceWarningSound
 } from '../utils/audio';
-import { Volume2, VolumeX, ArrowLeft, Zap, ShieldAlert, Sparkles, Heart, Clock, Crown } from 'lucide-react';
+import { Volume2, VolumeX, ArrowLeft, Zap, ShieldAlert, Sparkles, Heart, Clock, Crown, MousePointerClick } from 'lucide-react';
 import { setSoundMuted, getSoundMuted } from '../utils/audio';
 
 interface BattleScreenProps {
@@ -26,12 +26,18 @@ interface BattleScreenProps {
     totalQuestions: number;
     wrongWords: WordItem[];
     elapsedSeconds: number;
+    sentenceStats: SentenceTapStat[];
+    averageTapCount: number;
+    totalTapCount: number;
   }) => void;
   onFailGame: (info: {
     failedWord: WordItem;
     defeatedCount: number;
     totalQuestions: number;
     elapsedSeconds: number;
+    sentenceStats?: SentenceTapStat[];
+    averageTapCount?: number;
+    totalTapCount?: number;
   }) => void;
   onExitToHome: () => void;
 }
@@ -70,11 +76,54 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   // Monsters currently active for this question
   const [currentMonsters, setCurrentMonsters] = useState<BattleMonster[]>([]);
 
+  // 문장별 탭 빈도 추적 (문장 인덱스 => 탭 횟수)
+  const [sentenceTapCounts, setSentenceTapCounts] = useState<{ [qIndex: number]: number }>({});
+
   const targetWord = questionWords[currentIndex] || questionWords[0];
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const advanceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const questionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const cryingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 문장별 탭 카운트 기록 함수 (선택지 탭, 발음 듣기 탭, 문장 힌트 탭 등)
+  const recordSentenceTap = useCallback(() => {
+    setSentenceTapCounts(prev => ({
+      ...prev,
+      [currentIndex]: (prev[currentIndex] || 0) + 1
+    }));
+  }, [currentIndex]);
+
+  // 각 문장별 탭 통계 및 평균 탭 빈도 계산
+  const computeSentenceTapStats = useCallback(
+    (finishIndex: number) => {
+      const totalPlayed = Math.min(questionWords.length, finishIndex + 1);
+      const stats: SentenceTapStat[] = [];
+      let totalTaps = 0;
+
+      for (let i = 0; i < totalPlayed; i++) {
+        const qw = questionWords[i];
+        // 각 문장당 최소 1회 탭(선택 시도) 보장
+        const taps = Math.max(1, sentenceTapCounts[i] || 1);
+        totalTaps += taps;
+        stats.push({
+          questionIndex: i,
+          word: qw.word,
+          exampleSentence: qw.exampleSentence || `This is a ${qw.word}.`,
+          exampleTranslation: qw.exampleTranslation || (qw.meanings && qw.meanings[0]) || '',
+          tapCount: taps,
+          isCorrect: !wrongWords.some(w => w.id === qw.id)
+        });
+      }
+
+      const avg = totalPlayed > 0 ? Number((totalTaps / totalPlayed).toFixed(2)) : 0;
+      return {
+        sentenceStats: stats,
+        averageTapCount: avg,
+        totalTapCount: totalTaps
+      };
+    },
+    [questionWords, sentenceTapCounts, wrongWords]
+  );
 
   // Clear timers on unmount
   useEffect(() => {
@@ -135,15 +184,20 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 
     setAdvanceProgress(100);
 
+    const { sentenceStats, averageTapCount, totalTapCount } = computeSentenceTapStats(currentIndex);
+
     setTimeout(() => {
       onFailGame({
         failedWord: targetWord,
         defeatedCount,
         totalQuestions: questionWords.length,
-        elapsedSeconds
+        elapsedSeconds,
+        sentenceStats,
+        averageTapCount,
+        totalTapCount
       });
     }, 450);
-  }, [hasFailed, isProcessing, targetWord, defeatedCount, questionWords.length, elapsedSeconds, onFailGame]);
+  }, [hasFailed, isProcessing, targetWord, defeatedCount, questionWords.length, elapsedSeconds, currentIndex, computeSentenceTapStats, onFailGame]);
 
   // Question countdown timer (18 seconds per question)
   useEffect(() => {
@@ -206,6 +260,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   const handleSelectMonster = (clickedMonster: BattleMonster) => {
     if (isProcessing || clickedMonster.isDefeated || hasFailed) return;
 
+    // 해당 문장에 대한 탭 횟수 기록
+    recordSentenceTap();
+
     if (clickedMonster.word.id === targetWord.id) {
       // CORRECT ANSWER!
       setIsProcessing(true);
@@ -249,6 +306,8 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           if (advanceTimerRef.current) clearInterval(advanceTimerRef.current);
           if (questionTimerRef.current) clearInterval(questionTimerRef.current);
 
+          const { sentenceStats, averageTapCount, totalTapCount } = computeSentenceTapStats(currentIndex);
+
           onFinishGame({
             score: score + 100 + comboBonus,
             combo: newCombo,
@@ -256,7 +315,10 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             defeatedCount: nextDefeated,
             totalQuestions: questionWords.length,
             wrongWords: wrongWords,
-            elapsedSeconds: elapsedSeconds
+            elapsedSeconds: elapsedSeconds,
+            sentenceStats,
+            averageTapCount,
+            totalTapCount
           });
         } else {
           const nextIndex = currentIndex + 1;
@@ -549,16 +611,48 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                 </div>
               )}
 
+              {/* Example sentence & sentence tap frequency badge */}
+              {targetWord.exampleSentence && (
+                <div 
+                  onClick={() => {
+                    recordSentenceTap();
+                    speakWord(targetWord.exampleSentence);
+                  }}
+                  className="mt-2 p-2 rounded-xl bg-amber-50/80 border border-amber-200 text-left cursor-pointer hover:bg-amber-100/70 transition-colors shadow-xs"
+                  title="클릭하여 예문 전체 발음 듣기"
+                >
+                  <div className="flex items-center justify-between text-[10px] font-bold text-amber-900 mb-0.5">
+                    <span className="flex items-center gap-1 text-blue-700">
+                      <Volume2 className="w-3 h-3" />
+                      <span>문장 예문</span>
+                    </span>
+                    <span className="bg-amber-200/90 text-amber-950 px-2 py-0.5 rounded-full font-mono font-black text-[10px] flex items-center gap-1">
+                      <MousePointerClick className="w-2.5 h-2.5 text-amber-800" />
+                      <span>문장 탭: {sentenceTapCounts[currentIndex] || 0}회</span>
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-slate-800 break-words leading-snug">
+                    💬 {targetWord.exampleSentence}
+                  </p>
+                  <p className="text-[11px] text-slate-600 break-words mt-0.5 font-medium">
+                    {targetWord.exampleTranslation}
+                  </p>
+                </div>
+              )}
+
               {/* Pronunciation audio prompt button */}
               <div className="mt-2 flex items-center justify-center gap-2">
                 <button
                   type="button"
                   id="btn-hear-hint-sound"
-                  onClick={() => speakWord(targetWord.word)}
+                  onClick={() => {
+                    recordSentenceTap();
+                    speakWord(targetWord.word);
+                  }}
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-800 text-xs font-bold border border-sky-300 active:scale-95 transition-transform"
                 >
                   <Volume2 className="w-3.5 h-3.5" />
-                  소리 힌트 듣기 (영어 발음)
+                  단어 소리 힌트 듣기
                 </button>
               </div>
 

@@ -1,94 +1,8 @@
 import { AvatarId, AvatarInfo } from '../types';
+import { AVATAR_IMAGES } from '../utils/assetHelper';
 
 export const AVATARS: Record<AvatarId, AvatarInfo> = {
-  leo: {
-    id: 'leo',
-    name: '레오 (Leo)',
-    title: '용감한 아기사자 기사',
-    tagline: '복슬복슬한 황금 갈기를 두른 듬직한 사자 기사!',
-    personality: '자신감 넘치고 듬직한 표정의 황금빛 사자 기사',
-    emoji: '🦁',
-    themeColor: '#f59e0b',
-    bgGradient: 'from-amber-400 to-orange-500',
-    cheerMsg: '으르렁! 힘내, 조금만 더 맞추면 탈출할 수 있어!',
-    rescueMsg: '우와아! 네 덕분에 10마리 워드 몬스터를 모두 물리치고 구출되었어! 정말 최고야, 고마워 친구야! 🦁✨',
-    requiredLevel: 1,
-    image3d: '/src/assets/images/char_leo_3d_1793326388782.jpg',
-    reward: {
-      id: 'reward-leo-sword',
-      name: '황금 용기의 검 & 방패',
-      description: '용감하게 몬스터를 물리친 최고의 기사에게만 주어지는 빛나는 황금 사자 무구 세트!',
-      iconType: 'sword',
-      emoji: '⚔️',
-      quote: '사자 기사의 용기 있는 마음이 깃든 황금 검과 방패를 선물할게!'
-    }
-  },
-  mina: {
-    id: 'mina',
-    name: '미나 (Mina)',
-    title: '꼬마 모험 탐험가',
-    tagline: '나침반과 돋보기로 비밀을 파헤치는 사랑스러운 탐험가!',
-    personality: '따뜻하고 사랑스러운 분위기의 모험 베레모 탐험가',
-    emoji: '👧',
-    themeColor: '#ec4899',
-    bgGradient: 'from-pink-400 to-rose-500',
-    cheerMsg: '대단해! 네가 영단어를 맞출 때마다 몬스터가 물러나고 있어!',
-    rescueMsg: '야호! 구해줘서 정말 고마워! 너처럼 멋진 영어 영웅과 함께라면 어떤 모험도 두렵지 않아! 💖🎒',
-    requiredLevel: 1,
-    image3d: '/src/assets/images/char_mina_3d_1793326389740.jpg',
-    reward: {
-      id: 'reward-mina-map',
-      name: '전설의 황금 보물지도 & 비밀 나침반',
-      description: '세상 모든 숨겨진 지혜와 보물을 찾아낼 수 있는 신비로운 탐험가의 양피지 지도!',
-      iconType: 'map',
-      emoji: '🗺️',
-      quote: '모험가의 소중한 보물지도와 나침반을 선물할게! 다음 모험도 함께 떠나자!'
-    }
-  },
-  tori: {
-    id: 'tori',
-    name: '토리 (Tori)',
-    title: '별빛 아기 마법사',
-    tagline: '신비한 마법 지팡이로 별빛 마법을 부리는 마법 요정!',
-    personality: '보라색 마법사 모자를 쓴 신비롭고 귀여운 마법 생명체',
-    emoji: '🧙',
-    themeColor: '#8b5cf6',
-    bgGradient: 'from-purple-400 to-indigo-600',
-    cheerMsg: '반짝반짝! 마법 같은 실력이야, 계속 몬스터를 공격해줘!',
-    rescueMsg: '마법처럼 날 구해줬구나! 감사의 별빛 마법을 가득 선물할게! 고마워 최고야! 🌟✨',
-    requiredLevel: 1,
-    image3d: '/src/assets/images/char_tori_3d_1793326391080.jpg',
-    reward: {
-      id: 'reward-tori-wand',
-      name: '신비의 별빛 요술봉',
-      description: '은하수 별가루로 만들어져 어둠을 환하게 밝히고 몬스터를 착하게 정화하는 마법 요술봉!',
-      iconType: 'wand',
-      emoji: '✨',
-      quote: '내 소중한 별빛 요술봉을 너에게 줄게! 반짝이는 마법의 힘을 느껴봐!'
-    }
-  },
-  pupu: {
-    id: 'pupu',
-    name: '푸푸 (Pupu)',
-    title: '아기 수호 드래곤',
-    tagline: '말랑말랑 통통한 분홍빛 날개를 펄럭이는 사랑스러운 드래곤!',
-    personality: '분홍색의 통통하고 말랑말랑한 판타지 수호 드래곤',
-    emoji: '🐲',
-    themeColor: '#ef4444',
-    bgGradient: 'from-red-400 to-rose-600',
-    cheerMsg: '쿠아앙! 내 불꽃 브레스보다 네 영어 실력이 훨씬 더 강력해!',
-    rescueMsg: '푸푸를 구해줘서 정말 고마워! 이제 든든한 드래곤 친구가 되어 평생 지켜줄게! 🔥🐉',
-    requiredLevel: 11, // 10레벨 돌파 시 해금
-    image3d: '/src/assets/images/char_pupu_3d_1793326392627.jpg',
-    reward: {
-      id: 'reward-pupu-orb',
-      name: '용의 불꽃 여의주 (드래곤 오브)',
-      description: '푸푸의 가슴속 따뜻한 불꽃과 끝없는 에너지가 응축된 찬란한 붉은 수정 구슬!',
-      iconType: 'orb',
-      emoji: '🔮',
-      quote: '드래곤의 가장 소중한 보물인 불꽃 여의주야! 너의 모험을 항상 비춰줄 거야!'
-    }
-  },
+  // 1. 첫 번째 기본 해금 캐릭터: 로비 (Robi)
   robi: {
     id: 'robi',
     name: '로비 (Robi)',
@@ -100,8 +14,8 @@ export const AVATARS: Record<AvatarId, AvatarInfo> = {
     bgGradient: 'from-cyan-400 to-blue-600',
     cheerMsg: '삐리삐리! 완벽한 계산이야, 몬스터의 방어막이 파괴되고 있어!',
     rescueMsg: '삐리릭! 시스템 복구 완료! 너의 뛰어난 두뇌에 진심으로 감탄했어, 고마워 파트너! ⚡🔩',
-    requiredLevel: 21, // 20레벨 돌파 시 해금 (Lv.21)
-    image3d: '/src/assets/images/char_robi_3d_1793326392398.jpg',
+    requiredLevel: 1, // 맨 처음 기본 해금
+    image3d: AVATAR_IMAGES.robi,
     reward: {
       id: 'reward-robi-wrench',
       name: '황금 번개 스패너 & 볼트',
@@ -111,28 +25,8 @@ export const AVATARS: Record<AvatarId, AvatarInfo> = {
       quote: '최고의 파트너에게 내 보물 1호 황금 번개 스패너를 수여할게! 치익~ 최고야!'
     }
   },
-  luna: {
-    id: 'luna',
-    name: '루나 (Luna)',
-    title: '달빛 연금술사 토끼',
-    tagline: '부드러운 흰색 털과 긴 귀를 가진 사랑스러운 달빛 토끼!',
-    personality: '부드러운 흰색 털과 긴 귀, 반짝이는 에메랄드 눈을 가진 토끼',
-    emoji: '🐰',
-    themeColor: '#10b981',
-    bgGradient: 'from-emerald-400 to-teal-600',
-    cheerMsg: '깡총깡총! 네 정답 덕분에 달빛 마법 물약이 완성되고 있어!',
-    rescueMsg: '달빛 숲을 함께 지켜줘서 고마워! 반짝이는 달빛 마법을 언제나 선물할게! 🌿✨',
-    requiredLevel: 31, // 30레벨 돌파 시 해금 (Lv.31)
-    image3d: '/src/assets/images/char_luna_3d_1793326393552.jpg',
-    reward: {
-      id: 'reward-luna-potion',
-      name: '신비의 달빛 무지개 물약',
-      description: '모든 피로를 씻어내고 영원한 집중력을 불어넣는 숲속 전설의 달빛 물약!',
-      iconType: 'potion',
-      emoji: '🧪',
-      quote: '루나가 정성껏 빚은 달빛 물약이야! 마시면 영단어가 쏙쏙 기억날 거야!'
-    }
-  },
+
+  // 2. 두 번째 기본 해금 캐릭터: 치치 (Chichi)
   chichi: {
     id: 'chichi',
     name: '치치 (Chichi)',
@@ -144,8 +38,8 @@ export const AVATARS: Record<AvatarId, AvatarInfo> = {
     bgGradient: 'from-orange-400 to-amber-600',
     cheerMsg: '쿠웅! 꿀단지보다 네 영단어 실력이 훨씬 달콤하고 멋져!',
     rescueMsg: '야호! 숲의 영웅이 나타났다! 맛있는 황금 도토리와 꿀을 가득 나눌게, 최고야! 🌰🍯',
-    requiredLevel: 41, // 40레벨 돌파 시 해금 (Lv.41)
-    image3d: '/src/assets/images/char_chichi_3d_1793326394176.jpg',
+    requiredLevel: 1, // 맨 처음 기본 해금
+    image3d: AVATAR_IMAGES.chichi,
     reward: {
       id: 'reward-chichi-bell',
       name: '황금 도토리 수호 방울',
@@ -155,6 +49,128 @@ export const AVATARS: Record<AvatarId, AvatarInfo> = {
       quote: '딸랑딸랑~ 숲을 울리는 행운의 황금 방울이야! 널 든든히 지켜줄게!'
     }
   },
+
+  // 3. 세 번째 기본 해금 캐릭터: 코코 (Coco)
+  coco: {
+    id: 'coco',
+    name: '코코 (Coco)',
+    title: '북극 오로라 아기곰',
+    tagline: '포근한 흰색 털과 민트 목도리를 두른 순수한 아기 북극곰!',
+    personality: '포근한 흰색 털과 반짝이는 얼음빛 눈을 가진 아기 북극곰',
+    emoji: '🐻‍❄️',
+    themeColor: '#06b6d4',
+    bgGradient: 'from-cyan-400 to-teal-500',
+    cheerMsg: '쿠웅! 차가운 몬스터도 네 따스한 열정 앞에서는 얼어붙어!',
+    rescueMsg: '포근포근~ 널 만나서 정말 행복해! 영원한 얼음 나라 친구가 되어줄게! ❄️🤍',
+    requiredLevel: 1, // 맨 처음 기본 해금
+    image3d: AVATAR_IMAGES.coco,
+    reward: {
+      id: 'reward-coco-crystal',
+      name: '영원한 오로라 빙하 수정',
+      description: '신비로운 칠색 오로라 빛깔을 뿜어내며 마음을 평온하게 해주는 마법 얼음 수정!',
+      iconType: 'crystal',
+      emoji: '💎',
+      quote: '북극의 밤하늘을 수놓은 오로라 조각이야! 네 꿈처럼 찬란하게 빛나!'
+    }
+  },
+
+  // 4. 네 번째 캐릭터: 미나 (Mina)
+  mina: {
+    id: 'mina',
+    name: '미나 (Mina)',
+    title: '꼬마 모험 탐험가',
+    tagline: '나침반과 돋보기로 비밀을 파헤치는 사랑스러운 탐험가!',
+    personality: '따뜻하고 사랑스러운 분위기의 모험 베레모 탐험가',
+    emoji: '👧',
+    themeColor: '#ec4899',
+    bgGradient: 'from-pink-400 to-rose-500',
+    cheerMsg: '대단해! 네가 영단어를 맞출 때마다 몬스터가 물러나고 있어!',
+    rescueMsg: '야호! 구해줘서 정말 고마워! 너처럼 멋진 영어 영웅과 함께라면 어떤 모험도 두렵지 않아! 💖🎒',
+    requiredLevel: 11, // 10레벨 돌파 시 해금 (Lv.11)
+    image3d: AVATAR_IMAGES.mina,
+    reward: {
+      id: 'reward-mina-map',
+      name: '전설의 황금 보물지도 & 비밀 나침반',
+      description: '세상 모든 숨겨진 지혜와 보물을 찾아낼 수 있는 신비로운 탐험가의 양피지 지도!',
+      iconType: 'map',
+      emoji: '🗺️',
+      quote: '모험가의 소중한 보물지도와 나침반을 선물할게! 다음 모험도 함께 떠나자!'
+    }
+  },
+
+  // 5. 다섯 번째 캐릭터: 루나 (Luna)
+  luna: {
+    id: 'luna',
+    name: '루나 (Luna)',
+    title: '달빛 연금술사 토끼',
+    tagline: '부드러운 흰색 털과 긴 귀를 가진 사랑스러운 달빛 토끼!',
+    personality: '부드러운 흰색 털과 긴 귀, 반짝이는 에메랄드 눈을 가진 토끼',
+    emoji: '🐰',
+    themeColor: '#10b981',
+    bgGradient: 'from-emerald-400 to-teal-600',
+    cheerMsg: '깡총깡총! 네 정답 덕분에 달빛 마법 물약이 완성되고 있어!',
+    rescueMsg: '달빛 숲을 함께 지켜줘서 고마워! 반짝이는 달빛 마법을 언제나 선물할게! 🌿✨',
+    requiredLevel: 21, // 20레벨 돌파 시 해금 (Lv.21)
+    image3d: AVATAR_IMAGES.luna,
+    reward: {
+      id: 'reward-luna-potion',
+      name: '신비의 달빛 무지개 물약',
+      description: '모든 피로를 씻어내고 영원한 집중력을 불어넣는 숲속 전설의 달빛 물약!',
+      iconType: 'potion',
+      emoji: '🧪',
+      quote: '루나가 정성껏 빚은 달빛 물약이야! 마시면 영단어가 쏙쏙 기억날 거야!'
+    }
+  },
+
+  // 6. 여섯 번째 캐릭터: 푸푸 (Pupu)
+  pupu: {
+    id: 'pupu',
+    name: '푸푸 (Pupu)',
+    title: '아기 수호 드래곤',
+    tagline: '말랑말랑 통통한 분홍빛 날개를 펄럭이는 사랑스러운 드래곤!',
+    personality: '분홍색의 통통하고 말랑말랑한 판타지 수호 드래곤',
+    emoji: '🐲',
+    themeColor: '#ef4444',
+    bgGradient: 'from-red-400 to-rose-600',
+    cheerMsg: '쿠아앙! 내 불꽃 브레스보다 네 영어 실력이 훨씬 더 강력해!',
+    rescueMsg: '푸푸를 구해줘서 정말 고마워! 이제 든든한 드래곤 친구가 되어 평생 지켜줄게! 🔥🐉',
+    requiredLevel: 31, // 30레벨 돌파 시 해금 (Lv.31)
+    image3d: AVATAR_IMAGES.pupu,
+    reward: {
+      id: 'reward-pupu-orb',
+      name: '용의 불꽃 여의주 (드래곤 오브)',
+      description: '푸푸의 가슴속 따뜻한 불꽃과 끝없는 에너지가 응축된 찬란한 붉은 수정 구슬!',
+      iconType: 'orb',
+      emoji: '🔮',
+      quote: '드래곤의 가장 소중한 보물인 불꽃 여의주야! 너의 모험을 항상 비춰줄 거야!'
+    }
+  },
+
+  // 7. 일곱 번째 캐릭터: 레오 (Leo)
+  leo: {
+    id: 'leo',
+    name: '레오 (Leo)',
+    title: '용감한 아기사자 기사',
+    tagline: '복슬복슬한 황금 갈기를 두른 듬직한 사자 기사!',
+    personality: '자신감 넘치고 듬직한 표정의 황금빛 사자 기사',
+    emoji: '🦁',
+    themeColor: '#f59e0b',
+    bgGradient: 'from-amber-400 to-orange-500',
+    cheerMsg: '으르렁! 힘내, 조금만 더 맞추면 탈출할 수 있어!',
+    rescueMsg: '우와아! 네 덕분에 10마리 워드 몬스터를 모두 물리치고 구출되었어! 정말 최고야, 고마워 친구야! 🦁✨',
+    requiredLevel: 41, // 40레벨 돌파 시 해금 (Lv.41)
+    image3d: AVATAR_IMAGES.leo,
+    reward: {
+      id: 'reward-leo-sword',
+      name: '황금 용기의 검 & 방패',
+      description: '용감하게 몬스터를 물리친 최고의 기사에게만 주어지는 빛나는 황금 사자 무구 세트!',
+      iconType: 'sword',
+      emoji: '⚔️',
+      quote: '사자 기사의 용기 있는 마음이 깃든 황금 검과 방패를 선물할게!'
+    }
+  },
+
+  // 8. 여덟 번째 캐릭터: 카야 (Kaya)
   kaya: {
     id: 'kaya',
     name: '카야 (Kaya)',
@@ -167,7 +183,7 @@ export const AVATARS: Record<AvatarId, AvatarInfo> = {
     cheerMsg: '끼에엑! 날카로운 눈빛과 엄청난 단어 실력이야, 몬스터가 도망쳐!',
     rescueMsg: '푸른 하늘 끝까지 너와 함께 비행하고 싶어! 최고의 영어 챔피언, 멋져! 🪶☁️',
     requiredLevel: 61, // 60레벨 돌파 시 해금 (Lv.61)
-    image3d: '/src/assets/images/char_kaya_3d_1793326395205.jpg',
+    image3d: AVATAR_IMAGES.kaya,
     reward: {
       id: 'reward-kaya-feather',
       name: '바람의 폭풍 깃털 펜',
@@ -177,28 +193,32 @@ export const AVATARS: Record<AvatarId, AvatarInfo> = {
       quote: '그리핀의 가장 굳센 날개 깃털이야! 어떤 도전 앞에서도 당당히 날아올라!'
     }
   },
-  coco: {
-    id: 'coco',
-    name: '코코 (Coco)',
-    title: '북극 오로라 아기곰',
-    tagline: '포근한 흰색 털과 민트 목도리를 두른 순수한 아기 북극곰!',
-    personality: '포근한 흰색 털과 반짝이는 얼음빛 눈을 가진 아기 북극곰',
-    emoji: '🐻‍❄️',
-    themeColor: '#06b6d4',
-    bgGradient: 'from-cyan-400 to-teal-500',
-    cheerMsg: '쿠웅! 차가운 몬스터도 네 따스한 열정 앞에서는 얼어붙어!',
-    rescueMsg: '포근포근~ 널 만나서 정말 행복해! 영원한 얼음 나라 친구가 되어줄게! ❄️🤍',
+
+  // 9. 아홉 번째 캐릭터: 토리 (Tori)
+  tori: {
+    id: 'tori',
+    name: '토리 (Tori)',
+    title: '별빛 아기 마법사',
+    tagline: '신비한 마법 지팡이로 별빛 마법을 부리는 마법 요정!',
+    personality: '보라색 마법사 모자를 쓴 신비롭고 귀여운 마법 생명체',
+    emoji: '🧙',
+    themeColor: '#8b5cf6',
+    bgGradient: 'from-purple-400 to-indigo-600',
+    cheerMsg: '반짝반짝! 마법 같은 실력이야, 계속 몬스터를 공격해줘!',
+    rescueMsg: '마법처럼 날 구해줬구나! 감사의 별빛 마법을 가득 선물할게! 고마워 최고야! 🌟✨',
     requiredLevel: 81, // 80레벨 돌파 시 해금 (Lv.81)
-    image3d: '/src/assets/images/char_coco_3d_1793326395544.jpg',
+    image3d: AVATAR_IMAGES.tori,
     reward: {
-      id: 'reward-coco-crystal',
-      name: '영원한 오로라 빙하 수정',
-      description: '신비로운 칠색 오로라 빛깔을 뿜어내며 마음을 평온하게 해주는 마법 얼음 수정!',
-      iconType: 'crystal',
-      emoji: '💎',
-      quote: '북극의 밤하늘을 수놓은 오로라 조각이야! 네 꿈처럼 찬란하게 빛나!'
+      id: 'reward-tori-wand',
+      name: '신비의 별빛 요술봉',
+      description: '은하수 별가루로 만들어져 어둠을 환하게 밝히고 몬스터를 착하게 정화하는 마법 요술봉!',
+      iconType: 'wand',
+      emoji: '✨',
+      quote: '내 소중한 별빛 요술봉을 너에게 줄게! 반짝이는 마법의 힘을 느껴봐!'
     }
   },
+
+  // 10. 열 번째 최종 마스터 캐릭터: 솔 (Sol)
   sol: {
     id: 'sol',
     name: '솔 (Sol)',
@@ -211,7 +231,7 @@ export const AVATARS: Record<AvatarId, AvatarInfo> = {
     cheerMsg: '화려한 태양의 빛이여! 워드벤처의 모든 영단어를 완벽히 정복했다!',
     rescueMsg: '경배하라! 100레벨을 돌파하고 워드벤처의 모든 동료를 모은 진정한 대마스터! 온 세상이 너의 영광을 찬양하리라! 👑☀️🌟',
     requiredLevel: 100, // 100레벨 최종 해금!
-    image3d: '/src/assets/images/char_sol_3d_1793326395290.jpg',
+    image3d: AVATAR_IMAGES.sol,
     reward: {
       id: 'reward-sol-crown',
       name: '태양의 영원한 마스터 황금 관',

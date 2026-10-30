@@ -17,8 +17,12 @@ import {
   BookOpen,
   ArrowRight,
   Gift,
-  LockOpen
+  LockOpen,
+  FileSpreadsheet,
+  MousePointerClick
 } from 'lucide-react';
+import { GoogleSheetsModal } from './GoogleSheetsModal';
+import { getStudentName, GOOGLE_SHEET_URL } from '../services/googleSheets';
 
 interface ResultScreenProps {
   stats: GameStats;
@@ -35,8 +39,10 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
   onRetryWrongWords,
   onGoHome
 }) => {
-  const avatar = AVATARS[stats.avatarId] || AVATARS.leo;
+  const avatar = AVATARS[stats.avatarId] || AVATARS.robi;
   const reward = avatar.reward;
+  const [showSheetsModal, setShowSheetsModal] = useState(false);
+  const studentName = getStudentName();
 
   useEffect(() => {
     // Play victory fanfare upon arriving at result screen!
@@ -52,13 +58,13 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
   // Milestones where a new avatar is unlocked (Level 10, 20, 30, 40, 60, 80, 100)
   const unlockMilestone = (() => {
     switch (stats.level) {
-      case 10: return { name: '아기 불꽃 드래곤 푸푸', emoji: '🐲', nextLevel: 11 };
-      case 20: return { name: '천재 발명로봇 로비', emoji: '🤖', nextLevel: 21 };
-      case 30: return { name: '숲의 요정 달토끼 루나', emoji: '🐰', nextLevel: 31 };
-      case 40: return { name: '도토리 궁수 다람쥐 치치', emoji: '🐿️', nextLevel: 41 };
-      case 60: return { name: '하늘의 수호신 그리핀 카야', emoji: '🦅', nextLevel: 61 };
-      case 80: return { name: '얼음왕국 백곰 코코', emoji: '🐻‍❄️', nextLevel: 81 };
-      case 100: return { name: '전설의 태양새 솔', emoji: '👑', nextLevel: 100, isFinal: true };
+      case 10: return { name: '꼬마 모험 탐험가 미나', emoji: '👧', nextLevel: 11 };
+      case 20: return { name: '달빛 연금술사 토끼 루나', emoji: '🐰', nextLevel: 21 };
+      case 30: return { name: '아기 수호 드래곤 푸푸', emoji: '🐲', nextLevel: 31 };
+      case 40: return { name: '용감한 아기사자 기사 레오', emoji: '🦁', nextLevel: 41 };
+      case 60: return { name: '푸른 구름의 그리핀 카야', emoji: '🦅', nextLevel: 61 };
+      case 80: return { name: '별빛 아기 마법사 토리', emoji: '🧙', nextLevel: 81 };
+      case 100: return { name: '태양의 전설 피닉스 솔', emoji: '👑', nextLevel: 100, isFinal: true };
       default: return null;
     }
   })();
@@ -302,6 +308,103 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
 
       </div>
 
+      {/* Sentence Tap Frequency & Average Analysis Card (문장별 탭 빈도 및 평균 분석) */}
+      {stats.sentenceStats && stats.sentenceStats.length > 0 && (
+        <div className="w-full max-w-2xl mx-auto my-2 bg-white/95 backdrop-blur-sm rounded-3xl p-4 sm:p-5 border-3 border-indigo-200 shadow-md">
+          <div className="flex items-center justify-between border-b-2 border-indigo-100 pb-2.5 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-xl bg-indigo-100 text-indigo-700">
+                <MousePointerClick className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="font-title text-base sm:text-lg font-black text-slate-800">
+                  각 문장별 탭 빈도 및 평균 분석
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  .env.local의 NEXT_PUBLIC_GOOGLE_SCRIPT_URL로 구글 시트에 저장 완료!
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 block font-semibold">문장당 평균</span>
+              <span className="inline-block px-2.5 py-0.5 rounded-full bg-linear-to-r from-indigo-500 to-blue-600 text-white font-mono font-black text-xs sm:text-sm shadow-xs">
+                {stats.averageTapCount != null ? `${stats.averageTapCount}회` : '1회'}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+            {stats.sentenceStats.map((item, idx) => (
+              <div
+                key={idx}
+                className="p-2.5 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex items-center justify-between gap-2 text-xs hover:border-indigo-300 transition-colors"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-800 truncate">
+                    <span className="text-indigo-600 font-mono text-[11px] font-black">#{idx + 1}</span>
+                    <span className="truncate">{item.exampleSentence}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 truncate mt-0.5 font-medium">{item.exampleTranslation}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="inline-block px-2.5 py-1 rounded-xl bg-indigo-600 text-white font-mono font-black text-xs shadow-xs">
+                    {item.tapCount}회 탭
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Google Sheets Sync Card for Elementary 3rd Grade */}
+      <div className="w-full max-w-2xl mx-auto my-2 bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <FileSpreadsheet className="w-5 h-5 text-yellow-300" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-blue-900">
+                구글 시트 학습 기록 연동
+              </span>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full">
+                문장별 탭 자동 기록됨
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 truncate mt-0.5">
+              탐험가 <strong className="text-blue-700">{studentName}</strong> | 맞힌 개수: <strong className="text-emerald-700">{stats.defeatedCount}개</strong> | 틀린 개수: <strong className="text-rose-600">{stats.wrongWords.length}개</strong>
+            </p>
+            <p className="text-[10px] text-indigo-700 font-bold mt-0.5 flex items-center gap-1">
+              <MousePointerClick className="w-3 h-3 text-indigo-600" />
+              <span>문장별 평균 탭: <strong className="text-indigo-900">{stats.averageTapCount != null ? `${stats.averageTapCount}회` : '1회'}</strong> (총 {stats.totalTapCount != null ? stats.totalTapCount : stats.defeatedCount}회 탭)</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              setShowSheetsModal(true);
+            }}
+            className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-xs active:scale-95 transition-all"
+          >
+            기록/설정
+          </button>
+          <a
+            href={GOOGLE_SHEET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold transition-all hidden sm:inline-block"
+          >
+            시트 열기 ↗
+          </a>
+        </div>
+      </div>
+
       {/* Action Buttons: 다음 레벨 도전 / 다시 하기 / 처음으로 */}
       <div className="w-full max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2.5 my-3">
         {!isGameCompleted ? (
@@ -349,6 +452,12 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
           <span>홈으로</span>
         </button>
       </div>
+
+      {/* Google Sheets Modal */}
+      <GoogleSheetsModal
+        isOpen={showSheetsModal}
+        onClose={() => setShowSheetsModal(false)}
+      />
 
     </div>
   );

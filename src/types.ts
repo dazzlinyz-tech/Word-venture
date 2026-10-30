@@ -1,4 +1,4 @@
-export type AvatarId = 'leo' | 'mina' | 'tori' | 'pupu' | 'robi' | 'luna' | 'chichi' | 'kaya' | 'coco' | 'sol';
+export type AvatarId = 'robi' | 'chichi' | 'coco' | 'mina' | 'luna' | 'pupu' | 'leo' | 'kaya' | 'tori' | 'sol';
 
 export interface CharacterReward {
   id: string;
@@ -69,6 +69,15 @@ export interface BattleMonster {
 export type GameScreen = 'start' | 'battle' | 'result' | 'failed';
 export type GameMode = 'standard10' | 'polysemy' | 'mix';
 
+export interface SentenceTapStat {
+  questionIndex: number;
+  word: string;
+  exampleSentence: string;
+  exampleTranslation: string;
+  tapCount: number; // 각 문장별 탭 빈도
+  isCorrect?: boolean;
+}
+
 export interface GameStats {
   score: number;
   combo: number;
@@ -84,6 +93,9 @@ export interface GameStats {
   newLevelUnlocked?: number;
   failedWord?: WordItem;
   failReason?: 'timeout' | 'monster_caught';
+  sentenceStats?: SentenceTapStat[];
+  averageTapCount?: number;
+  totalTapCount?: number;
 }
 
 export interface PlayerProgress {
@@ -91,3 +103,4 @@ export interface PlayerProgress {
   maxClearedLevel: number;
   unlockedRewards: string[]; // array of reward IDs
 }
+

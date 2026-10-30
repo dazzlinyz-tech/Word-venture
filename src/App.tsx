@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AvatarId, GameMode, GameScreen, GameStats, WordItem } from './types';
+import { AvatarId, GameMode, GameScreen, GameStats, WordItem, SentenceTapStat } from './types';
 import { getGameRoundWords } from './data/words';
 import { StartScreen } from './components/StartScreen';
 import { BattleScreen } from './components/BattleScreen';
@@ -7,12 +7,18 @@ import { ResultScreen } from './components/ResultScreen';
 import { FailedScreen } from './components/FailedScreen';
 import { AVATARS } from './data/avatars';
 import { playLevelUpSound } from './utils/audio';
+import { recordGameSession } from './services/googleSheets';
+import { preloadAllGameAssets } from './utils/assetHelper';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<GameScreen>('start');
-  const [selectedAvatarId, setSelectedAvatarId] = useState<AvatarId>('leo');
+  const [selectedAvatarId, setSelectedAvatarId] = useState<AvatarId>('robi');
   const [selectedMode, setSelectedMode] = useState<GameMode>('mix');
   const [gameWords, setGameWords] = useState<WordItem[]>([]);
+
+  useEffect(() => {
+    preloadAllGameAssets();
+  }, []);
   
   // Highest unlocked level (saved in localStorage)
   const [maxUnlockedLevel, setMaxUnlockedLevel] = useState<number>(() => {
@@ -55,12 +61,24 @@ export default function App() {
     }
   }, [maxUnlockedLevel]);
 
+  // Ensure current selected avatar is unlocked for the player's level
+  useEffect(() => {
+    const highest = Math.max(level, maxUnlockedLevel);
+    const av = AVATARS[selectedAvatarId];
+    if (av && av.requiredLevel > 1 && highest < av.requiredLevel) {
+      setSelectedAvatarId('robi');
+    }
+  }, [level, maxUnlockedLevel, selectedAvatarId]);
+
   // Failure state tracking
   const [failedData, setFailedData] = useState<{
     failedWord?: WordItem;
     defeatedCount: number;
     totalQuestions: number;
     elapsedSeconds: number;
+    sentenceStats?: SentenceTapStat[];
+    averageTapCount?: number;
+    totalTapCount?: number;
   } | null>(null);
 
   const [lastStats, setLastStats] = useState<GameStats>({
@@ -93,6 +111,9 @@ export default function App() {
     totalQuestions: number;
     wrongWords: WordItem[];
     elapsedSeconds: number;
+    sentenceStats: SentenceTapStat[];
+    averageTapCount: number;
+    totalTapCount: number;
   }) => {
     const currentAvatar = AVATARS[selectedAvatarId] || AVATARS.leo;
     const clearedStage = level;
@@ -108,10 +129,20 @@ export default function App() {
     });
 
     // Advance maxUnlockedLevel and current level immediately!
-    // So even if the player doesn't click "다음 스테이지 도전" right now and returns home or reloads,
-    // they are already at the next stage!
     setMaxUnlockedLevel(prev => Math.max(prev, nextStage));
     setLevel(nextStage);
+
+    // Record session to Google Sheets (.env.local의 NEXT_PUBLIC_GOOGLE_SCRIPT_URL 사용)
+    const correctCount = stats.defeatedCount;
+    const wrongCount = stats.wrongWords.length;
+    recordGameSession(
+      correctCount,
+      wrongCount,
+      clearedStage,
+      'win',
+      stats.sentenceStats,
+      stats.averageTapCount
+    );
 
     setCurrentScreen('result');
   };
@@ -122,8 +153,24 @@ export default function App() {
     defeatedCount: number;
     totalQuestions: number;
     elapsedSeconds: number;
+    sentenceStats?: SentenceTapStat[];
+    averageTapCount?: number;
+    totalTapCount?: number;
   }) => {
     setFailedData(data);
+
+    // Record failure session to Google Sheets (.env.local의 NEXT_PUBLIC_GOOGLE_SCRIPT_URL 사용)
+    const correctCount = data.defeatedCount;
+    const wrongCount = Math.max(0, data.totalQuestions - data.defeatedCount);
+    recordGameSession(
+      correctCount,
+      wrongCount,
+      level,
+      'fail',
+      data.sentenceStats,
+      data.averageTapCount
+    );
+
     setCurrentScreen('failed');
   };
 
@@ -216,6 +263,9 @@ export default function App() {
           level={level}
           defeatedCount={failedData?.defeatedCount ?? 0}
           totalQuestions={failedData?.totalQuestions ?? 10}
+          sentenceStats={failedData?.sentenceStats}
+          averageTapCount={failedData?.averageTapCount}
+          totalTapCount={failedData?.totalTapCount}
           onRetryLevel={handleRestartCurrentLevel}
           onGoHome={handleGoHome}
         />

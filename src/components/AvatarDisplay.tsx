@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { AvatarId } from '../types';
 import { AVATARS } from '../data/avatars';
+import { AVATAR_PUBLIC_FALLBACKS } from '../utils/assetHelper';
+import { SmartImage } from './SmartImage';
 import { Sparkles, Star } from 'lucide-react';
 
 interface AvatarDisplayProps {
@@ -22,7 +24,7 @@ export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
   isLocked = false,
   className = ''
 }) => {
-  const avatar = AVATARS[avatarId] || AVATARS.leo;
+  const avatar = AVATARS[avatarId] || AVATARS.robi;
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -159,29 +161,26 @@ export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
             style={{ backgroundColor: avatar.themeColor }}
           />
 
-          {/* 3D Kawaii Figurine Image */}
-          {!imageError ? (
-            <img
-              src={avatar.image3d}
-              alt={avatar.name}
-              referrerPolicy="no-referrer"
-              onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
-              className={`w-full h-full object-cover rounded-2xl sm:rounded-3xl shadow-lg border-2 border-white/80 transition-opacity duration-300 ${
-                imageLoaded ? 'opacity-100' : 'opacity-80 scale-95'
-              } ${isLocked ? 'grayscale-[40%] contrast-90' : ''}`}
-            />
-          ) : (
-            /* Styled CSS Fallback Container if image fails */
-            <div 
-              className={`w-full h-full rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center text-center p-2 shadow-inner border-2 border-white bg-linear-to-b ${avatar.bgGradient}`}
-            >
-              <span className="text-3xl sm:text-4xl drop-shadow-md">{avatar.emoji}</span>
-              <span className="text-[10px] font-black text-white mt-1 drop-shadow-xs truncate max-w-full">
-                {avatar.name.split(' ')[0]}
-              </span>
-            </div>
-          )}
+          {/* 3D Kawaii Figurine Image via SmartImage */}
+          <SmartImage
+            src={avatar.image3d}
+            alt={avatar.name}
+            fallbackSrcs={AVATAR_PUBLIC_FALLBACKS[avatarId]}
+            className="w-full h-full rounded-2xl sm:rounded-3xl shadow-lg border-2 border-white/80"
+            imgClassName={`w-full h-full object-cover rounded-2xl sm:rounded-3xl ${
+              isLocked ? 'grayscale-[40%] contrast-90' : ''
+            }`}
+            fallbackComponent={
+              <div 
+                className={`w-full h-full rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center text-center p-2 shadow-inner border-2 border-white bg-linear-to-b ${avatar.bgGradient}`}
+              >
+                <span className="text-3xl sm:text-4xl drop-shadow-md">{avatar.emoji}</span>
+                <span className="text-[10px] font-black text-white mt-1 drop-shadow-xs truncate max-w-full">
+                  {avatar.name.split(' ')[0]}
+                </span>
+              </div>
+            }
+          />
 
           {/* Glossy highlight sheen on the figurine */}
           <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-linear-to-tr from-transparent via-white/10 to-white/30 pointer-events-none" />

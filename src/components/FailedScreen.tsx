@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
-import { AvatarId, WordItem } from '../types';
+import React, { useEffect, useState } from 'react';
+import { AvatarId, WordItem, SentenceTapStat } from '../types';
 import { AVATARS } from '../data/avatars';
 import { AvatarDisplay } from './AvatarDisplay';
 import { playGameOverDefeatSound, playClickSound, speakWord } from '../utils/audio';
-import { RotateCcw, Home, Volume2, Clock, AlertTriangle, Sparkles } from 'lucide-react';
+import { RotateCcw, Home, Volume2, Clock, AlertTriangle, Sparkles, FileSpreadsheet, MousePointerClick } from 'lucide-react';
+import { GoogleSheetsModal } from './GoogleSheetsModal';
+import { getStudentName, GOOGLE_SHEET_URL } from '../services/googleSheets';
 
 interface FailedScreenProps {
   avatarId: AvatarId;
@@ -11,6 +13,9 @@ interface FailedScreenProps {
   level: number;
   defeatedCount: number;
   totalQuestions: number;
+  sentenceStats?: SentenceTapStat[];
+  averageTapCount?: number;
+  totalTapCount?: number;
   onRetryLevel: () => void;
   onGoHome: () => void;
 }
@@ -21,10 +26,16 @@ export const FailedScreen: React.FC<FailedScreenProps> = ({
   level,
   defeatedCount,
   totalQuestions,
+  sentenceStats,
+  averageTapCount,
+  totalTapCount,
   onRetryLevel,
   onGoHome
 }) => {
-  const avatar = AVATARS[avatarId] || AVATARS.leo;
+  const avatar = AVATARS[avatarId] || AVATARS.robi;
+  const [showSheetsModal, setShowSheetsModal] = useState(false);
+  const studentName = getStudentName();
+  const wrongCount = Math.max(0, totalQuestions - defeatedCount);
 
   useEffect(() => {
     playGameOverDefeatSound();
@@ -119,6 +130,53 @@ export const FailedScreen: React.FC<FailedScreenProps> = ({
 
       </div>
 
+      {/* Google Sheets Sync Card for Elementary 3rd Grade */}
+      <div className="w-full max-w-2xl mx-auto my-2 bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <FileSpreadsheet className="w-5 h-5 text-yellow-300" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-blue-900">
+                구글 시트 학습 기록 연동
+              </span>
+              <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full">
+                학습 데이터 기록됨
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 truncate mt-0.5">
+              탐험가 <strong className="text-blue-700">{studentName}</strong> | 맞힌 개수: <strong className="text-emerald-700">{defeatedCount}개</strong> | 틀린 개수: <strong className="text-rose-600">{wrongCount}개</strong>
+            </p>
+            <p className="text-[10px] text-indigo-700 font-bold mt-0.5 flex items-center gap-1">
+              <MousePointerClick className="w-3 h-3 text-indigo-600" />
+              <span>문장별 평균 탭: <strong className="text-indigo-900">{averageTapCount != null ? `${averageTapCount}회` : '1회'}</strong> (시트에 문장별 탭 빈도 및 평균 전송됨)</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              setShowSheetsModal(true);
+            }}
+            className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-xs active:scale-95 transition-all"
+          >
+            기록/설정
+          </button>
+          <a
+            href={GOOGLE_SHEET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold transition-all hidden sm:inline-block"
+          >
+            시트 열기 ↗
+          </a>
+        </div>
+      </div>
+
       {/* Action Buttons: 다시 도전하기 / 홈으로 */}
       <div className="w-full max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 my-3">
         <button
@@ -147,6 +205,12 @@ export const FailedScreen: React.FC<FailedScreenProps> = ({
           처음으로 (아바타 선택)
         </button>
       </div>
+
+      {/* Google Sheets Modal */}
+      <GoogleSheetsModal
+        isOpen={showSheetsModal}
+        onClose={() => setShowSheetsModal(false)}
+      />
 
     </div>
   );

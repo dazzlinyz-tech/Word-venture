@@ -3,6 +3,8 @@ import { BattleMonster } from '../types';
 import { Volume2, Sparkles, Crown } from 'lucide-react';
 import { speakWord } from '../utils/audio';
 import { MONSTER_SPECIES } from '../data/monsters';
+import { MONSTER_PUBLIC_FALLBACKS } from '../utils/assetHelper';
+import { SmartImage } from './SmartImage';
 
 interface MonsterDisplayProps {
   monster: BattleMonster;
@@ -135,31 +137,26 @@ export const MonsterDisplay: React.FC<MonsterDisplayProps> = ({
         <div
           className={`relative w-20 h-20 xs:w-24 xs:h-24 sm:w-32 sm:h-32 transition-transform duration-300 flex items-center justify-center ${monsterAnimationClass}`}
         >
-          {/* Main 3D Figurine Image */}
-          {!imageError ? (
-            <img
-              src={species.image3d}
-              alt={species.name}
-              referrerPolicy="no-referrer"
-              onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
-              className={`w-full h-full object-contain filter drop-shadow-md transition-all duration-300 ${
-                imageLoaded ? 'opacity-100 scale-100' : 'opacity-70 scale-95'
-              } ${isDefeated ? 'brightness-150 rotate-12 scale-75' : ''} ${
-                isWrong ? 'brightness-110 saturate-150' : ''
-              }`}
-            />
-          ) : (
-            /* Pristine High-Detail Vector Creature Fallback */
-            <div
-              className={`w-full h-full rounded-2xl flex flex-col items-center justify-center p-2 bg-linear-to-b ${species.bgGradient} border-2 border-white shadow-inner`}
-            >
-              <span className="text-3xl sm:text-4xl drop-shadow-md">{species.particleEmoji[0]}</span>
-              <span className="text-[10px] font-black text-slate-800 mt-1 truncate max-w-full">
-                {species.name}
-              </span>
-            </div>
-          )}
+          {/* Main 3D Figurine Image via SmartImage */}
+          <SmartImage
+            src={species.image3d}
+            alt={species.name}
+            fallbackSrcs={MONSTER_PUBLIC_FALLBACKS[visualType] || MONSTER_PUBLIC_FALLBACKS.slime}
+            className="w-full h-full rounded-2xl flex items-center justify-center"
+            imgClassName={`w-full h-full object-contain filter drop-shadow-md transition-all duration-300 ${
+              isDefeated ? 'brightness-150 rotate-12 scale-75' : ''
+            } ${isWrong ? 'brightness-110 saturate-150' : ''}`}
+            fallbackComponent={
+              <div
+                className={`w-full h-full rounded-2xl flex flex-col items-center justify-center p-2 bg-linear-to-b ${species.bgGradient} border-2 border-white shadow-inner`}
+              >
+                <span className="text-3xl sm:text-4xl drop-shadow-md">{species.particleEmoji[0]}</span>
+                <span className="text-[10px] font-black text-slate-800 mt-1 truncate max-w-full">
+                  {species.name}
+                </span>
+              </div>
+            }
+          />
 
           {/* Interactive Emotion Overlays */}
           {/* Wrong Answer: Cheeky giggling face overlay (ㅋ_ㅋ 😝) */}
