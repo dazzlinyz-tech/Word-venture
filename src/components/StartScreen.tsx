@@ -3,7 +3,58 @@ import { AvatarId, GameMode } from '../types';
 import { AVATARS } from '../data/avatars';
 import { AvatarDisplay } from './AvatarDisplay';
 import { playClickSound, setSoundMuted, getSoundMuted, playWrongAnswerSound } from '../utils/audio';
-import { Volume2, VolumeX, Sparkles, Play, Info, Lock, Gift, Trophy, Star, Check } from 'lucide-react';
+import {
+  Volume2,
+  VolumeX,
+  Sparkles,
+  Play,
+  Info,
+  Lock,
+  Gift,
+  Trophy,
+  Star,
+  Check,
+  Wand2,
+  Sword,
+  Compass,
+  Wrench,
+  FlaskConical,
+  Bell,
+  Feather,
+  Gem,
+  Crown
+} from 'lucide-react';
+
+export const RewardMiniIcon: React.FC<{ iconType: string; emoji: string; className?: string }> = ({
+  iconType,
+  emoji,
+  className = 'w-3 h-3'
+}) => {
+  switch (iconType) {
+    case 'wand':
+      return <Wand2 className={`${className} text-purple-600 inline shrink-0`} />;
+    case 'sword':
+      return <Sword className={`${className} text-amber-600 inline shrink-0`} />;
+    case 'map':
+      return <Compass className={`${className} text-rose-500 inline shrink-0`} />;
+    case 'orb':
+      return <Sparkles className={`${className} text-red-500 inline shrink-0`} />;
+    case 'wrench':
+      return <Wrench className={`${className} text-cyan-600 inline shrink-0`} />;
+    case 'potion':
+      return <FlaskConical className={`${className} text-emerald-600 inline shrink-0`} />;
+    case 'bell':
+      return <Bell className={`${className} text-amber-600 inline shrink-0`} />;
+    case 'feather':
+      return <Feather className={`${className} text-blue-600 inline shrink-0`} />;
+    case 'crystal':
+      return <Gem className={`${className} text-cyan-500 inline shrink-0`} />;
+    case 'crown':
+      return <Crown className={`${className} text-yellow-500 inline shrink-0`} />;
+    default:
+      return <span className="inline text-xs">{emoji}</span>;
+  }
+};
 
 interface StartScreenProps {
   selectedAvatarId: AvatarId;
@@ -283,8 +334,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                       선택됨 ✨
                     </span>
                   ) : (
-                    <span className="text-[9px] text-slate-500 font-semibold truncate w-full mt-0.5">
-                      {av.reward.emoji} {av.reward.name.split(' ')[0]}
+                    <span className="text-[9px] text-slate-600 font-semibold truncate w-full mt-0.5 inline-flex items-center justify-center gap-1">
+                      <RewardMiniIcon iconType={av.reward.iconType} emoji={av.reward.emoji} className="w-2.5 h-2.5" />
+                      <span className="truncate">{av.reward.name.split(' ')[0]}</span>
                     </span>
                   )}
                 </button>
@@ -316,9 +368,13 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 <p className="text-xs font-semibold text-slate-700 mt-0.5">
                   {currentAvatar.personality || currentAvatar.tagline}
                 </p>
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-900 mt-1">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-900 mt-1 flex-wrap">
                   <Gift className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                  <span>클리어 보상: <span className="text-slate-900 font-black">{currentAvatar.reward.name}</span> ({currentAvatar.reward.emoji})</span>
+                  <span>클리어 보상:</span>
+                  <span className="inline-flex items-center gap-1 bg-amber-200/80 px-2 py-0.5 rounded-lg text-slate-900 font-black shadow-xs">
+                    <RewardMiniIcon iconType={currentAvatar.reward.iconType} emoji={currentAvatar.reward.emoji} className="w-3.5 h-3.5" />
+                    <span>{currentAvatar.reward.name}</span>
+                  </span>
                 </div>
               </div>
             </div>

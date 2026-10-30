@@ -3,6 +3,7 @@ import { AvatarId, WordItem, BattleMonster, MonsterVisualType } from '../types';
 import { AvatarDisplay } from './AvatarDisplay';
 import { MonsterDisplay } from './MonsterDisplay';
 import { ELEMENTARY_WORDS, getDistractorChoices } from '../data/words';
+import { getMonsterTypeForStage } from '../data/monsters';
 import {
   playMonsterDefeatSound,
   playWrongAnswerSound,
@@ -10,7 +11,7 @@ import {
   speakWord,
   playAdvanceWarningSound
 } from '../utils/audio';
-import { Volume2, VolumeX, ArrowLeft, Zap, ShieldAlert, Sparkles, Heart, Clock } from 'lucide-react';
+import { Volume2, VolumeX, ArrowLeft, Zap, ShieldAlert, Sparkles, Heart, Clock, Crown } from 'lucide-react';
 import { setSoundMuted, getSoundMuted } from '../utils/audio';
 
 interface BattleScreenProps {
@@ -82,23 +83,25 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
     };
   }, []);
 
-  // Setup monsters for current question
+  // Setup monsters for current question with progressive tiers and 3D attributes
   const setupMonstersForIndex = useCallback((index: number) => {
     if (index >= questionWords.length) return;
     const target = questionWords[index];
     const choices = getDistractorChoices(target, ELEMENTARY_WORDS);
 
     const monsters: BattleMonster[] = choices.map((choiceWord, i) => {
-      // Pick a fun visual type
-      const vType = MONSTER_TYPES[(index + i) % MONSTER_TYPES.length];
+      // Pick a stage-appropriate visual type and tier (early, mid, late, boss)
+      const { visualType, isBoss, tier } = getMonsterTypeForStage(index, i);
       return {
         id: `monster-${index}-${choiceWord.id}-${i}`,
         word: choiceWord,
-        visualType: vType,
+        visualType,
         colorScheme: '',
         isDefeated: false,
         isHit: false,
-        isWrong: false
+        isWrong: false,
+        isBoss,
+        tier
       };
     });
 
@@ -432,14 +435,18 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             >
               <div className="w-4 h-4 -ml-2 rounded-full bg-red-600 border-2 border-white shadow-md animate-ping absolute" />
               <div className="w-4 h-4 -ml-2 rounded-full bg-red-600 border-2 border-white shadow-md flex items-center justify-center text-[8px] text-white">
-                👾
+                {currentIndex === 9 ? '👑' : '👾'}
               </div>
             </div>
           </div>
         </div>
 
         {/* Arena Stage: Left Adventuring Partner Avatar Cheering, Right Marching Word Monsters */}
-        <div className="relative w-full flex-1 min-h-[220px] sm:min-h-[260px] bg-linear-to-b from-sky-100/90 to-emerald-100/90 rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 border-3 sm:border-4 border-amber-300/80 shadow-lg flex flex-col justify-between overflow-hidden">
+        <div className={`relative w-full flex-1 min-h-[220px] sm:min-h-[260px] rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 border-3 sm:border-4 shadow-lg flex flex-col justify-between overflow-hidden transition-colors ${
+          currentIndex === 9
+            ? 'bg-linear-to-b from-amber-100/95 via-yellow-50/95 to-amber-200/95 border-amber-400'
+            : 'bg-linear-to-b from-sky-100/90 to-emerald-100/90 border-amber-300/80'
+        }`}>
           
           {/* Background whimsical landscape clouds/hills */}
           <div className="absolute inset-0 pointer-events-none opacity-20">
@@ -461,7 +468,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                   isAvatarCrying
                     ? '흑흑... 아쉬워! 💧'
                     : isAvatarCheering
-                    ? '나이스! 정답이야! 🌟'
+                    ? currentIndex === 9 ? '우와아! 대보스 격파 완료! 👑' : '나이스! 정답이야! 🌟'
+                    : currentIndex === 9
+                    ? '👑 대보스 드래곤 킹이야! 마지막 한 방을 날려줘! 🔥'
                     : isDanger
                     ? '조심해! 몬스터가 다가오고 있어! ⚠️'
                     : undefined
@@ -558,9 +567,18 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
 
           {/* 3 Word Monsters to Choose From (선택지 몬스터 3마리) */}
           <div className="relative z-10 mt-3 pt-2 border-t-2 border-amber-200/60">
-            <div className="text-center text-xs font-extrabold text-amber-900 mb-2">
-              👇 알맞은 영어 단어 몬스터를 터치하세요!
-            </div>
+            {currentIndex === 9 ? (
+              <div className="flex items-center justify-center gap-1.5 mb-2 px-2">
+                <div className="px-3 py-1 rounded-full bg-linear-to-r from-amber-500 via-yellow-400 to-orange-500 text-white font-title text-xs sm:text-sm font-black shadow-md flex items-center gap-1.5 animate-bounce">
+                  <Crown className="w-4 h-4 text-yellow-100 fill-yellow-200 shrink-0" />
+                  <span>[최종 보스전] 대보스 황금 드래곤 킹을 물리치고 모험을 완성하세요!</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-xs font-extrabold text-amber-900 mb-2">
+                👇 알맞은 3D 영단어 몬스터를 터치하세요!
+              </div>
+            )}
 
             <div className="grid grid-cols-3 gap-1.5 sm:gap-4 max-w-2xl mx-auto w-full">
               {currentMonsters.map(monster => (

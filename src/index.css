@@ -142,3 +142,77 @@
 .animate-tear-2 {
   animation: tearStream 0.75s ease-in-out 0.35s infinite;
 }
+
+/* 3D Monster Custom Keyframes & Utility Classes */
+@keyframes monsterSpawn {
+  0% { transform: scale(0.3) translateY(20px); opacity: 0; }
+  60% { transform: scale(1.1) translateY(-6px); opacity: 1; }
+  85% { transform: scale(0.96) translateY(2px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes monsterHit {
+  0% { transform: scale(1) translateY(0); filter: brightness(1); }
+  25% { transform: scale(1.25, 0.8) translateY(-8px) rotate(-6deg); filter: brightness(1.8) contrast(1.2); }
+  50% { transform: scale(0.85, 1.15) translateY(4px) rotate(4deg); }
+  75% { transform: scale(1.05, 0.95) translateY(-2px); }
+  100% { transform: scale(1) translateY(0); filter: brightness(1); }
+}
+
+@keyframes monsterGiggle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  20% { transform: translateY(-8px) rotate(-6deg) scale(1.06); }
+  40% { transform: translateY(0) rotate(6deg) scale(1.04); }
+  60% { transform: translateY(-6px) rotate(-4deg) scale(1.06); }
+  80% { transform: translateY(0) rotate(3deg) scale(1.02); }
+}
+
+@keyframes bossAuraPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+    filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.7)) drop-shadow(0 0 24px rgba(251, 191, 36, 0.4));
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+    filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 36px rgba(251, 191, 36, 0.7));
+  }
+}
+
+@keyframes bossEntrance {
+  0% { transform: scale(0.2) translateY(60px); opacity: 0; filter: brightness(2); }
+  50% { transform: scale(1.15) translateY(-12px); opacity: 1; filter: brightness(1.4); }
+  75% { transform: scale(0.95) translateY(4px); }
+  100% { transform: scale(1) translateY(0); filter: brightness(1); }
+}
+
+@keyframes elementMote {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
+  50% { transform: translateY(-10px) scale(1.15); opacity: 1; }
+}
+
+.animate-monster-spawn {
+  animation: monsterSpawn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.animate-monster-hit {
+  animation: monsterHit 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-monster-giggle {
+  animation: monsterGiggle 0.6s ease-in-out forwards;
+}
+
+.animate-boss-aura {
+  animation: bossAuraPulse 2s ease-in-out infinite;
+}
+
+.animate-boss-entrance {
+  animation: bossEntrance 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.animate-element-mote {
+  animation: elementMote 2.2s ease-in-out infinite;
+}
+

@@ -55,7 +55,7 @@ export const AVATARS: Record<AvatarId, AvatarInfo> = {
     themeColor: '#8b5cf6',
     bgGradient: 'from-purple-400 to-indigo-600',
     cheerMsg: '반짝반짝! 마법 같은 실력이야, 계속 몬스터를 공격해줘!',
-    rescueMsg: '마법처럼 날 구해줬구나! 감사의 별빛 마법을 가득 선물할게! 고마워 최고야! 🌟🪄',
+    rescueMsg: '마법처럼 날 구해줬구나! 감사의 별빛 마법을 가득 선물할게! 고마워 최고야! 🌟✨',
     requiredLevel: 1,
     image3d: '/src/assets/images/char_tori_3d_1793326391080.jpg',
     reward: {
@@ -63,7 +63,7 @@ export const AVATARS: Record<AvatarId, AvatarInfo> = {
       name: '신비의 별빛 요술봉',
       description: '은하수 별가루로 만들어져 어둠을 환하게 밝히고 몬스터를 착하게 정화하는 마법 요술봉!',
       iconType: 'wand',
-      emoji: '🪄',
+      emoji: '✨',
       quote: '내 소중한 별빛 요술봉을 너에게 줄게! 반짝이는 마법의 힘을 느껴봐!'
     }
   },

@@ -38,7 +38,21 @@ export interface WordItem {
   category: 'daily' | 'polysemy' | 'nature' | 'action';
 }
 
-export type MonsterVisualType = 'slime' | 'bat' | 'flame' | 'rock' | 'jelly' | 'cyclops';
+export type MonsterVisualType = 
+  | 'slime' 
+  | 'flame' 
+  | 'ice' 
+  | 'forest' 
+  | 'magic' 
+  | 'dark' 
+  | 'electric' 
+  | 'boss'
+  | 'bat' 
+  | 'rock' 
+  | 'jelly' 
+  | 'cyclops';
+
+export type MonsterTier = 'early' | 'mid' | 'late' | 'boss';
 
 export interface BattleMonster {
   id: string;
@@ -48,6 +62,8 @@ export interface BattleMonster {
   isDefeated: boolean;
   isHit: boolean;
   isWrong: boolean;
+  isBoss?: boolean;
+  tier?: MonsterTier;
 }
 
 export type GameScreen = 'start' | 'battle' | 'result' | 'failed';

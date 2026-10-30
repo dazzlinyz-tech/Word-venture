@@ -3,6 +3,7 @@ import { AvatarId, WordItem, GameStats } from '../types';
 import { AVATARS } from '../data/avatars';
 import { AvatarDisplay } from './AvatarDisplay';
 import { RewardDisplay } from './RewardDisplay';
+import { RewardMiniIcon } from './StartScreen';
 import { playVictoryFanfare, playClickSound, speakWord, playItemAcquireSound } from '../utils/audio';
 import {
   RotateCcw,
@@ -145,8 +146,9 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
                 <Gift className="w-3.5 h-3.5" />
                 <span>{avatar.name}의 특별 모험 보상 획득!</span>
               </div>
-              <h3 className="font-title text-base sm:text-lg font-black text-slate-800">
-                {reward.name} {reward.emoji}
+              <h3 className="font-title text-base sm:text-lg font-black text-slate-800 flex items-center justify-center sm:justify-start gap-1.5">
+                <RewardMiniIcon iconType={reward.iconType} emoji={reward.emoji} className="w-5 h-5" />
+                <span>{reward.name}</span>
               </h3>
               <p className="text-xs text-slate-600 font-medium mt-0.5">
                 {reward.description}
