@@ -103,7 +103,7 @@ export default function App() {
   };
 
   // Finish battle round (Victory!)
-  const handleFinishBattle = (stats: {
+  const handleFinishBattle = async (stats: {
     score: number;
     combo: number;
     maxCombo: number;
@@ -135,20 +135,24 @@ export default function App() {
     // Record session to Google Sheets (.env.local의 NEXT_PUBLIC_GOOGLE_SCRIPT_URL 사용)
     const correctCount = stats.defeatedCount;
     const wrongCount = stats.wrongWords.length;
-    recordGameSession(
-      correctCount,
-      wrongCount,
-      clearedStage,
-      'win',
-      stats.sentenceStats,
-      stats.averageTapCount
-    );
+    try {
+      await recordGameSession(
+        correctCount,
+        wrongCount,
+        clearedStage,
+        'win',
+        stats.sentenceStats,
+        stats.averageTapCount
+      );
+    } catch (err) {
+      console.error('[GoogleSheets] 승리 기록 저장 예외:', err);
+    }
 
     setCurrentScreen('result');
   };
 
   // Battle round Failed (Time out or monster reached avatar)
-  const handleFailGame = (data: {
+  const handleFailGame = async (data: {
     failedWord?: WordItem;
     defeatedCount: number;
     totalQuestions: number;
@@ -162,14 +166,18 @@ export default function App() {
     // Record failure session to Google Sheets (.env.local의 NEXT_PUBLIC_GOOGLE_SCRIPT_URL 사용)
     const correctCount = data.defeatedCount;
     const wrongCount = Math.max(0, data.totalQuestions - data.defeatedCount);
-    recordGameSession(
-      correctCount,
-      wrongCount,
-      level,
-      'fail',
-      data.sentenceStats,
-      data.averageTapCount
-    );
+    try {
+      await recordGameSession(
+        correctCount,
+        wrongCount,
+        level,
+        'fail',
+        data.sentenceStats,
+        data.averageTapCount
+      );
+    } catch (err) {
+      console.error('[GoogleSheets] 실패 기록 저장 예외:', err);
+    }
 
     setCurrentScreen('failed');
   };

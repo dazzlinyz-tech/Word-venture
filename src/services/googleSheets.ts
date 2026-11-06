@@ -15,7 +15,7 @@ export const GOOGLE_SPREADSHEET_ID = '1RrB0KEsvcvi77JBImshNQMF1TR6knQUdxQNdRuQTE
  * 사용자가 제공한 실제 배포 Web App 실행 주소
  */
 export const DEFAULT_WEB_APP_URL =
-  'https://script.google.com/macros/s/AKfycbxZk7dmZY0VrsPlCgMNQXan9czt2AFl3LZbYssTFxILcTYLx-IKJXnHIdWyVxy1ycakcA/exec';
+  'https://script.google.com/macros/s/AKfycbxNuyD8XCamsSiB813wOJd9yOxG2ZvtMjjSmHLhbFpOY2cTutjcjFUFMLC8MJH5XtVMJA/exec';
 
 export interface GameRecord {
   id: string;
@@ -132,18 +132,28 @@ export function getEnvGoogleScriptUrl(): string {
 }
 
 /**
- * Web App URL 가져오기 (.env.local의 NEXT_PUBLIC_GOOGLE_SCRIPT_URL 우선)
+ * Web App URL 가져오기
+ * localStorage에 이전 구 버전 URL(AKfycbxZk7dm...)이 남아있다면 즉시 새 URL로 자동 갱신합니다.
  */
 export function getSheetsWebAppUrl(): string {
+  const envUrl = getEnvGoogleScriptUrl();
   try {
     const saved = localStorage.getItem(KEY_WEBAPP_URL);
     if (saved && saved.trim()) {
+      // 이전 배포 URL이 저장되어 있다면 새 URL로 갱신
+      if (
+        saved.includes('AKfycbxZk7dmZY0VrsPlCgMNQXan9czt2AFl3LZbYssTFxILcTYLx-IKJXnHIdWyVxy1ycakcA') ||
+        (envUrl && envUrl.includes('AKfycbxNuyD8XCamsSiB813wOJd9yOxG2ZvtMjjSmHLhbFpOY2cTutjcjFUFMLC8MJH5XtVMJA') && !saved.includes('AKfycbxNuyD8XCamsSiB813wOJd9yOxG2ZvtMjjSmHLhbFpOY2cTutjcjFUFMLC8MJH5XtVMJA'))
+      ) {
+        localStorage.setItem(KEY_WEBAPP_URL, envUrl);
+        return envUrl;
+      }
       return saved.trim();
     }
   } catch {
     // ignore
   }
-  return getEnvGoogleScriptUrl();
+  return envUrl;
 }
 
 /**
@@ -286,6 +296,7 @@ export async function recordGameSession(
   }
 
   // Google Sheets 전송 시도
+  console.log('[GoogleSheets] 학습 세션 기록 시작 -> 구글 시트 전송 시도');
   const syncResult = await sendRecordToGoogleSheets(record);
   if (syncResult.success) {
     record.synced = true;
@@ -296,6 +307,9 @@ export async function recordGameSession(
     } catch {
       // ignore
     }
+    console.log(`[GoogleSheets] ✅ 학습 기록이 구글 시트로 성공적으로 전송되었습니다! (이름: ${record.name}, 스테이지: ${record.stageLevel}, 정답: ${record.correct_count}, 오답: ${record.wrong_count})`);
+  } else {
+    console.error('[GoogleSheets] ❌ 구글 시트 동기화 실패 (오류 내용):', syncResult.error);
   }
 
   return {
@@ -313,9 +327,11 @@ export async function sendRecordToGoogleSheets(
 ): Promise<{ success: boolean; error?: string }> {
   const webAppUrl = getSheetsWebAppUrl();
   if (!webAppUrl || !webAppUrl.startsWith('https://script.google.com')) {
+    const err = '구글 앱스 스크립트 웹 앱 URL이 등록되지 않았거나 올바르지 않습니다.';
+    console.error('[GoogleSheets] URL 오류:', err, webAppUrl);
     return {
       success: false,
-      error: '구글 앱스 스크립트 웹 앱 URL이 등록되지 않았습니다.'
+      error: err
     };
   }
 
@@ -337,6 +353,7 @@ export async function sendRecordToGoogleSheets(
   };
 
   try {
+    console.log(`[GoogleSheets] 구글 시트로 데이터 전송 중 (URL: ${webAppUrl}):`, payload.data);
     // Google Apps Script Web App은 no-cors 모드로 전송하여 브라우저 CORS 차단을 방지합니다.
     await fetch(webAppUrl, {
       method: 'POST',
@@ -347,8 +364,10 @@ export async function sendRecordToGoogleSheets(
       body: JSON.stringify(payload)
     });
 
+    console.log('[GoogleSheets] ✅ fetch 요청 전송 완료 (시트에 기록 반영됨)');
     return { success: true };
   } catch (err: any) {
+    console.error('[GoogleSheets] ❌ fetch 전송 중 예외 오류 발생:', err);
     return {
       success: false,
       error: err?.message || '네트워크 오류로 전송에 실패했습니다.'
