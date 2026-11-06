@@ -495,11 +495,18 @@ function getTargetSheet() {
   var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     var sheets = ss.getSheets();
-    if (sheets.length > 0 && sheets[0].getLastRow() === 0) {
+    // 기존 시트가 1개만 있거나 기본 '시트1'/'Sheet1'인 경우 해당 시트를 바로 활용
+    if (sheets.length === 1) {
       sheet = sheets[0];
       sheet.setName(SHEET_NAME);
     } else {
-      sheet = ss.insertSheet(SHEET_NAME);
+      var defaultSheet = ss.getSheetByName("시트1") || ss.getSheetByName("Sheet1");
+      if (defaultSheet) {
+        sheet = defaultSheet;
+        sheet.setName(SHEET_NAME);
+      } else {
+        sheet = ss.insertSheet(SHEET_NAME);
+      }
     }
   }
 
