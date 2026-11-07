@@ -15,7 +15,7 @@ export const GOOGLE_SPREADSHEET_ID = '1RrB0KEsvcvi77JBImshNQMF1TR6knQUdxQNdRuQTE
  * 사용자가 제공한 실제 배포 Web App 실행 주소
  */
 export const DEFAULT_WEB_APP_URL =
-  'https://script.google.com/macros/s/AKfycbxNuyD8XCamsSiB813wOJd9yOxG2ZvtMjjSmHLhbFpOY2cTutjcjFUFMLC8MJH5XtVMJA/exec';
+  'https://script.google.com/macros/s/AKfycbzq3DhM3hVNSxwTezehAY4YI-egERzYsnZAsq3xe0u2aXnVWo0aVfkuDphOu4T8u8ji5Q/exec';
 
 export type SyncStatus = 'verified' | 'pending_verify' | 'unsynced' | 'failed';
 
@@ -138,17 +138,18 @@ export function getEnvGoogleScriptUrl(): string {
 
 /**
  * Web App URL 가져오기
- * localStorage에 이전 구 버전 URL(AKfycbxZk7dm...)이 남아있다면 즉시 새 URL로 자동 갱신합니다.
+ * localStorage에 이전 구 버전 URL이 남아있다면 즉시 새 배포 URL로 자동 갱신합니다.
  */
 export function getSheetsWebAppUrl(): string {
   const envUrl = getEnvGoogleScriptUrl();
   try {
     const saved = localStorage.getItem(KEY_WEBAPP_URL);
     if (saved && saved.trim()) {
-      // 이전 배포 URL이 저장되어 있다면 새 URL로 갱신
+      // 이전 배포 URL이 저장되어 있거나 현재 기본 배포 URL과 다를 경우 최신 URL로 자동 갱신
       if (
-        saved.includes('AKfycbxZk7dmZY0VrsPlCgMNQXan9czt2AFl3LZbYssTFxILcTYLx-IKJXnHIdWyVxy1ycakcA') ||
-        (envUrl && envUrl.includes('AKfycbxNuyD8XCamsSiB813wOJd9yOxG2ZvtMjjSmHLhbFpOY2cTutjcjFUFMLC8MJH5XtVMJA') && !saved.includes('AKfycbxNuyD8XCamsSiB813wOJd9yOxG2ZvtMjjSmHLhbFpOY2cTutjcjFUFMLC8MJH5XtVMJA'))
+        saved.includes('AKfycbxZk7dm') ||
+        saved.includes('AKfycbxNuyD8') ||
+        (envUrl && envUrl.includes('AKfycbzq3DhM3hVNSxwTezehAY4YI-egERzYsnZAsq3xe0u2aXnVWo0aVfkuDphOu4T8u8ji5Q') && !saved.includes('AKfycbzq3DhM3hVNSxwTezehAY4YI-egERzYsnZAsq3xe0u2aXnVWo0aVfkuDphOu4T8u8ji5Q'))
       ) {
         localStorage.setItem(KEY_WEBAPP_URL, envUrl);
         return envUrl;

@@ -10,7 +10,7 @@ export default defineConfig(() => {
     define: {
       'process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL': JSON.stringify(
         process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL ||
-        'https://script.google.com/macros/s/AKfycbxNuyD8XCamsSiB813wOJd9yOxG2ZvtMjjSmHLhbFpOY2cTutjcjFUFMLC8MJH5XtVMJA/exec'
+        'https://script.google.com/macros/s/AKfycbzq3DhM3hVNSxwTezehAY4YI-egERzYsnZAsq3xe0u2aXnVWo0aVfkuDphOu4T8u8ji5Q/exec'
       ),
     },
     resolve: {
