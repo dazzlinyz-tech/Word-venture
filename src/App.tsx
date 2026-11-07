@@ -7,8 +7,8 @@ import { ResultScreen } from './components/ResultScreen';
 import { FailedScreen } from './components/FailedScreen';
 import { AVATARS } from './data/avatars';
 import { playLevelUpSound } from './utils/audio';
-import { recordGameSession } from './services/googleSheets';
 import { preloadAllGameAssets } from './utils/assetHelper';
+import { recordGameSession } from './services/googleSheets';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<GameScreen>('start');
@@ -132,21 +132,16 @@ export default function App() {
     setMaxUnlockedLevel(prev => Math.max(prev, nextStage));
     setLevel(nextStage);
 
-    // Record session to Google Sheets (.env.local의 NEXT_PUBLIC_GOOGLE_SCRIPT_URL 사용)
-    const correctCount = stats.defeatedCount;
-    const wrongCount = stats.wrongWords.length;
-    try {
-      await recordGameSession(
-        correctCount,
-        wrongCount,
-        clearedStage,
-        'win',
-        stats.sentenceStats,
-        stats.averageTapCount
-      );
-    } catch (err) {
+    // 구글 시트에 학습 기록 (문장별 탭 빈도 및 평균 포함)
+    recordGameSession(
+      stats.defeatedCount,
+      stats.wrongWords.length,
+      stats.sentenceStats,
+      stats.averageTapCount,
+      stats.totalTapCount
+    ).catch(err => {
       console.error('[GoogleSheets] 승리 기록 저장 예외:', err);
-    }
+    });
 
     setCurrentScreen('result');
   };
@@ -163,21 +158,17 @@ export default function App() {
   }) => {
     setFailedData(data);
 
-    // Record failure session to Google Sheets (.env.local의 NEXT_PUBLIC_GOOGLE_SCRIPT_URL 사용)
-    const correctCount = data.defeatedCount;
+    // 구글 시트에 실패 기록 (문장별 탭 빈도 및 평균 포함)
     const wrongCount = Math.max(0, data.totalQuestions - data.defeatedCount);
-    try {
-      await recordGameSession(
-        correctCount,
-        wrongCount,
-        level,
-        'fail',
-        data.sentenceStats,
-        data.averageTapCount
-      );
-    } catch (err) {
+    recordGameSession(
+      data.defeatedCount,
+      wrongCount,
+      data.sentenceStats,
+      data.averageTapCount,
+      data.totalTapCount
+    ).catch(err => {
       console.error('[GoogleSheets] 실패 기록 저장 예외:', err);
-    }
+    });
 
     setCurrentScreen('failed');
   };

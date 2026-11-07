@@ -22,7 +22,7 @@ import {
   MousePointerClick
 } from 'lucide-react';
 import { GoogleSheetsModal } from './GoogleSheetsModal';
-import { getStudentName, GOOGLE_SHEET_URL } from '../services/googleSheets';
+import { getStudentName, GOOGLE_SHEET_URL, getPlayCount } from '../services/googleSheets';
 
 interface ResultScreenProps {
   stats: GameStats;
@@ -358,7 +358,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
         </div>
       )}
 
-      {/* Google Sheets Sync Card for Elementary 3rd Grade */}
+      {/* Google Sheets Sync Card */}
       <div className="w-full max-w-2xl mx-auto my-2 bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -370,15 +370,14 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
                 구글 시트 학습 기록 연동
               </span>
               <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full">
-                문장별 탭 자동 기록됨
+                {getPlayCount()}회차 기록됨
               </span>
             </div>
             <p className="text-[11px] text-slate-600 truncate mt-0.5">
-              탐험가 <strong className="text-blue-700">{studentName}</strong> | 맞힌 개수: <strong className="text-emerald-700">{stats.defeatedCount}개</strong> | 틀린 개수: <strong className="text-rose-600">{stats.wrongWords.length}개</strong>
+              탐험가 <strong className="text-blue-700">{studentName}</strong> | 맞힌 단어: <strong className="text-emerald-700">{stats.defeatedCount}개</strong> | 틀린 단어: <strong className="text-rose-600">{stats.wrongWords.length}개</strong>
             </p>
             <p className="text-[10px] text-indigo-700 font-bold mt-0.5 flex items-center gap-1">
-              <MousePointerClick className="w-3 h-3 text-indigo-600" />
-              <span>문장별 평균 탭: <strong className="text-indigo-900">{stats.averageTapCount != null ? `${stats.averageTapCount}회` : '1회'}</strong> (총 {stats.totalTapCount != null ? stats.totalTapCount : stats.defeatedCount}회 탭)</span>
+              <span>문장별 평균 탭: <strong className="text-indigo-900">{stats.averageTapCount != null ? `${stats.averageTapCount}회` : '1회'}</strong> (총 {stats.totalTapCount != null ? stats.totalTapCount : stats.defeatedCount}회 탭 시트 저장됨)</span>
             </p>
           </div>
         </div>
@@ -392,7 +391,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
             }}
             className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-xs active:scale-95 transition-all"
           >
-            기록/설정
+            기록 관리
           </button>
           <a
             href={GOOGLE_SHEET_URL}

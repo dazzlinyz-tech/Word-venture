@@ -507,7 +507,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         초등학교 저학년을 위한 프리미엄 3D 캐릭터 100단계 영어 모험
       </footer>
 
-      {/* Google Sheets CRUD & Apps Script Modal */}
+      {/* Google Sheets Modal */}
       <GoogleSheetsModal
         isOpen={showSheetsModal}
         onClose={() => setShowSheetsModal(false)}

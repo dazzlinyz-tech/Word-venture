@@ -3,9 +3,9 @@ import { AvatarId, WordItem, SentenceTapStat } from '../types';
 import { AVATARS } from '../data/avatars';
 import { AvatarDisplay } from './AvatarDisplay';
 import { playGameOverDefeatSound, playClickSound, speakWord } from '../utils/audio';
-import { RotateCcw, Home, Volume2, Clock, AlertTriangle, Sparkles, FileSpreadsheet, MousePointerClick } from 'lucide-react';
+import { RotateCcw, Home, Volume2, Clock, AlertTriangle, Sparkles, FileSpreadsheet } from 'lucide-react';
 import { GoogleSheetsModal } from './GoogleSheetsModal';
-import { getStudentName, GOOGLE_SHEET_URL } from '../services/googleSheets';
+import { getStudentName, GOOGLE_SHEET_URL, getPlayCount } from '../services/googleSheets';
 
 interface FailedScreenProps {
   avatarId: AvatarId;
@@ -130,7 +130,7 @@ export const FailedScreen: React.FC<FailedScreenProps> = ({
 
       </div>
 
-      {/* Google Sheets Sync Card for Elementary 3rd Grade */}
+      {/* Google Sheets Sync Card */}
       <div className="w-full max-w-2xl mx-auto my-2 bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -142,15 +142,14 @@ export const FailedScreen: React.FC<FailedScreenProps> = ({
                 구글 시트 학습 기록 연동
               </span>
               <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full">
-                학습 데이터 기록됨
+                {getPlayCount()}회차 기록됨
               </span>
             </div>
             <p className="text-[11px] text-slate-600 truncate mt-0.5">
-              탐험가 <strong className="text-blue-700">{studentName}</strong> | 맞힌 개수: <strong className="text-emerald-700">{defeatedCount}개</strong> | 틀린 개수: <strong className="text-rose-600">{wrongCount}개</strong>
+              탐험가 <strong className="text-blue-700">{studentName}</strong> | 맞힌 단어: <strong className="text-emerald-700">{defeatedCount}개</strong> | 틀린 단어: <strong className="text-rose-600">{wrongCount}개</strong>
             </p>
             <p className="text-[10px] text-indigo-700 font-bold mt-0.5 flex items-center gap-1">
-              <MousePointerClick className="w-3 h-3 text-indigo-600" />
-              <span>문장별 평균 탭: <strong className="text-indigo-900">{averageTapCount != null ? `${averageTapCount}회` : '1회'}</strong> (시트에 문장별 탭 빈도 및 평균 전송됨)</span>
+              <span>문장별 평균 탭: <strong className="text-indigo-900">{averageTapCount != null ? `${averageTapCount}회` : '1회'}</strong> (시트에 문장별 탭 통계 전송됨)</span>
             </p>
           </div>
         </div>
@@ -164,7 +163,7 @@ export const FailedScreen: React.FC<FailedScreenProps> = ({
             }}
             className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-xs active:scale-95 transition-all"
           >
-            기록/설정
+            기록 관리
           </button>
           <a
             href={GOOGLE_SHEET_URL}
