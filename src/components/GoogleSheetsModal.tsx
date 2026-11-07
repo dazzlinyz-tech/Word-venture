@@ -35,6 +35,8 @@ import {
   clearLocalRecords,
   testSheetsConnection,
   sendRecordToGoogleSheets,
+  verifyAllLocalRecords,
+  SyncStatus,
   GameRecord,
   StudentProfile
 } from '../services/googleSheets';
@@ -62,6 +64,7 @@ export const GoogleSheetsModal: React.FC<GoogleSheetsModalProps> = ({
   const [saveNameSuccess, setSaveNameSuccess] = useState(false);
   const [saveUrlSuccess, setSaveUrlSuccess] = useState(false);
   const [syncingAll, setSyncingAll] = useState(false);
+  const [verifyingAll, setVerifyingAll] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -116,13 +119,17 @@ export const GoogleSheetsModal: React.FC<GoogleSheetsModalProps> = ({
       return;
     }
 
-    setTestStatus({ loading: true, message: '구글 시트로 테스트 데이터를 전송하는 중...' });
+    setTestStatus({ loading: true, message: '구글 시트 웹 앱 연결 상태 및 저장 대조 검증 중...' });
     setSheetsWebAppUrl(webAppUrlInput);
 
     const result = await testSheetsConnection(webAppUrlInput.trim());
     if (result.success) {
       playLevelUpSound();
-      setTestStatus({ loading: false, message: result.message, isError: false });
+      setTestStatus({
+        loading: false,
+        message: result.message,
+        isError: false
+      });
       setProfile(getStudentProfile());
       setRecords(getLocalRecords());
     } else {
@@ -130,30 +137,59 @@ export const GoogleSheetsModal: React.FC<GoogleSheetsModalProps> = ({
     }
   };
 
+  // 구글 시트 실제 저장 데이터와 대조 검증
+  const handleVerifyServerRecords = async () => {
+    setVerifyingAll(true);
+    setTestStatus({ loading: true, message: '구글 시트에 실제 저장된 학습 기록을 실시간으로 조회하여 대조하는 중...' });
+
+    const result = await verifyAllLocalRecords();
+    setVerifyingAll(false);
+    setRecords(getLocalRecords());
+
+    if (result.error) {
+      setTestStatus({
+        loading: false,
+        message: `❌ 시트 대조 실패: ${result.error}`,
+        isError: true
+      });
+    } else {
+      playLevelUpSound();
+      setTestStatus({
+        loading: false,
+        message: `📊 [대조 완료] 시트 저장 확인: ${result.verifiedCount}건 / 확인 대기: ${result.pendingCount}건 (총 ${result.totalChecked}건 검사)`,
+        isError: false
+      });
+    }
+  };
+
   const handleSyncUnsyncedRecords = async () => {
-    const unsynced = records.filter(r => !r.synced);
+    const unsynced = records.filter(r => r.syncStatus !== 'verified');
     if (unsynced.length === 0) {
-      setTestStatus({ loading: false, message: '모든 기록이 이미 구글 시트에 전송되었거나 대기 중인 기록이 없습니다.' });
+      setTestStatus({ loading: false, message: '모든 기록이 이미 구글 시트 저장 검증을 마쳤습니다. 대기 중인 기록이 없습니다.' });
       return;
     }
 
     setSyncingAll(true);
-    let successCount = 0;
+    setTestStatus({ loading: true, message: `${unsynced.length}건의 기록을 구글 시트로 전송 및 대조 검증 중...` });
+
+    let sentCount = 0;
     for (const rec of unsynced) {
-      const res = await sendRecordToGoogleSheets(rec);
+      const res = await sendRecordToGoogleSheets(rec, true); // 빠른 순차 전송
       if (res.success) {
-        rec.synced = true;
-        successCount++;
+        sentCount++;
       }
     }
 
-    localStorage.setItem('wordventure_local_records', JSON.stringify(records));
-    setRecords([...records]);
+    // 전송 후 전체 시트와 실시간 대조 검증 실행
+    await new Promise(r => setTimeout(r, 1000));
+    const verifyResult = await verifyAllLocalRecords();
+
+    setRecords(getLocalRecords());
     setSyncingAll(false);
     playLevelUpSound();
     setTestStatus({
       loading: false,
-      message: `✅ ${successCount}건의 미전송 기록을 구글 시트로 동기화 완료했습니다!`
+      message: `✅ ${sentCount}건 전송 완료! 시트 저장 확인: ${verifyResult.verifiedCount}건 (확인 대기: ${verifyResult.pendingCount}건)`
     });
   };
 
@@ -349,14 +385,23 @@ export const GoogleSheetsModal: React.FC<GoogleSheetsModalProps> = ({
                       최근 플레이 기록 ({records.length}건)
                     </h3>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={handleVerifyServerRecords}
+                      disabled={verifyingAll || syncingAll}
+                      className="px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-all border border-indigo-200 flex items-center gap-1 shadow-2xs"
+                      title="구글 시트에 실제 저장된 행을 직접 읽어와 로컬 기록과 실시간 대조합니다"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${verifyingAll ? 'animate-spin text-indigo-600' : ''}`} />
+                      <span>{verifyingAll ? '시트 대조 중...' : '시트 대조 확인'}</span>
+                    </button>
                     <button
                       onClick={handleSyncUnsyncedRecords}
-                      disabled={syncingAll}
-                      className="px-2.5 py-1 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-all border border-blue-200 flex items-center gap-1"
+                      disabled={syncingAll || verifyingAll}
+                      className="px-2.5 py-1 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-all border border-blue-200 flex items-center gap-1 shadow-2xs"
                     >
-                      <RefreshCw className={`w-3 h-3 ${syncingAll ? 'animate-spin' : ''}`} />
-                      <span>시트 동기화</span>
+                      <Send className={`w-3 h-3 ${syncingAll ? 'animate-bounce' : ''}`} />
+                      <span>{syncingAll ? '동기화 중...' : '미전송 동기화'}</span>
                     </button>
                     {records.length > 0 && (
                       <button
@@ -367,7 +412,7 @@ export const GoogleSheetsModal: React.FC<GoogleSheetsModalProps> = ({
                             playClickSound();
                           }
                         }}
-                        className="text-xs text-slate-400 hover:text-red-500"
+                        className="text-xs text-slate-400 hover:text-red-500 ml-1"
                       >
                         기록 비우기
                       </button>
@@ -394,43 +439,66 @@ export const GoogleSheetsModal: React.FC<GoogleSheetsModalProps> = ({
                           <th className="p-2.5 text-center">correct_count</th>
                           <th className="p-2.5 text-center">wrong_count</th>
                           <th className="p-2.5 text-center text-indigo-700">평균 탭 (문장당)</th>
-                          <th className="p-2.5 text-center">상태</th>
+                          <th className="p-2.5 text-center">동기화 상태</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-medium">
-                        {records.map((rec) => (
-                          <tr key={rec.id} className="hover:bg-blue-50/50">
-                            <td className="p-2 text-center text-slate-500 font-mono text-[11px]">
-                              {rec.timestamp}
-                            </td>
-                            <td className="p-2 text-center font-bold text-slate-800">
-                              {rec.name}
-                            </td>
-                            <td className="p-2 text-center text-blue-600 font-bold">
-                              {rec.play_count}회
-                            </td>
-                            <td className="p-2 text-center text-emerald-600 font-bold">
-                              {rec.correct_count}
-                            </td>
-                            <td className="p-2 text-center text-rose-500 font-bold">
-                              {rec.wrong_count}
-                            </td>
-                            <td className="p-2 text-center text-indigo-600 font-bold font-mono">
-                              {rec.average_tap_count != null ? `${rec.average_tap_count}회` : '-'}
-                            </td>
-                            <td className="p-2 text-center">
-                              {rec.synced ? (
-                                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">
-                                  <Check className="w-2.5 h-2.5" /> 전송완료
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">
-                                  로컬저장
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
+                        {records.map((rec) => {
+                          const status = rec.syncStatus || (rec.synced ? 'verified' : 'unsynced');
+                          return (
+                            <tr key={rec.id} className="hover:bg-blue-50/50">
+                              <td className="p-2 text-center text-slate-500 font-mono text-[11px]">
+                                {rec.timestamp}
+                              </td>
+                              <td className="p-2 text-center font-bold text-slate-800">
+                                {rec.name}
+                              </td>
+                              <td className="p-2 text-center text-blue-600 font-bold">
+                                {rec.play_count}회
+                              </td>
+                              <td className="p-2 text-center text-emerald-600 font-bold">
+                                {rec.correct_count}
+                              </td>
+                              <td className="p-2 text-center text-rose-500 font-bold">
+                                {rec.wrong_count}
+                              </td>
+                              <td className="p-2 text-center text-indigo-600 font-bold font-mono">
+                                {rec.average_tap_count != null ? `${rec.average_tap_count}회` : '-'}
+                              </td>
+                              <td className="p-2 text-center">
+                                {status === 'verified' ? (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold"
+                                    title="구글 시트에 실제 저장된 데이터와 일치함을 검증했습니다."
+                                  >
+                                    <Check className="w-2.5 h-2.5 text-emerald-600" /> 시트저장확인
+                                  </span>
+                                ) : status === 'pending_verify' ? (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold"
+                                    title="전송 요청이 서버로 전달되었습니다. [시트 대조 확인]을 눌러 반영 여부를 검증하세요."
+                                  >
+                                    <Clock className="w-2.5 h-2.5 text-blue-600 animate-pulse" /> 전송됨 (대조대기)
+                                  </span>
+                                ) : status === 'failed' ? (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold"
+                                    title={rec.syncError || '전송 실패'}
+                                  >
+                                    <AlertCircle className="w-2.5 h-2.5 text-rose-600" /> 전송실패
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold"
+                                    title="로컬 브라우저에만 저장되어 있습니다. [미전송 동기화]를 눌러 시트로 전송하세요."
+                                  >
+                                    로컬보관
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

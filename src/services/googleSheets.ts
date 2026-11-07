@@ -17,6 +17,8 @@ export const GOOGLE_SPREADSHEET_ID = '1RrB0KEsvcvi77JBImshNQMF1TR6knQUdxQNdRuQTE
 export const DEFAULT_WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycbxNuyD8XCamsSiB813wOJd9yOxG2ZvtMjjSmHLhbFpOY2cTutjcjFUFMLC8MJH5XtVMJA/exec';
 
+export type SyncStatus = 'verified' | 'pending_verify' | 'unsynced' | 'failed';
+
 export interface GameRecord {
   id: string;
   timestamp: string;
@@ -26,7 +28,10 @@ export interface GameRecord {
   wrong_count: number;
   stageLevel?: number;
   result?: 'win' | 'fail';
-  synced?: boolean;
+  synced?: boolean; // 하위 호환성 (syncStatus === 'verified')
+  syncStatus?: SyncStatus; // 'verified' | 'pending_verify' | 'unsynced' | 'failed'
+  syncError?: string;
+  lastCheckedAt?: string;
   average_tap_count?: number; // 각 문장별 평균 탭 빈도
   total_taps?: number; // 해당 라운드 전체 탭 수
   sentence_tap_summary?: string; // 각 문장별 탭 요약 텍스트
@@ -214,6 +219,152 @@ export function formatCurrentTimestamp(): string {
   return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
 }
 
+// 중복 전송 방지를 위한 In-Flight Set (동시 중복 호출 차단)
+const inFlightRecordIds = new Set<string>();
+
+/**
+ * 단일 로컬 기록의 상태 갱신 헬퍼
+ */
+export function updateSingleLocalRecord(updatedRecord: GameRecord): void {
+  try {
+    const list = getLocalRecords();
+    const updated = list.map(item => (item.id === updatedRecord.id ? { ...updatedRecord } : item));
+    localStorage.setItem(KEY_LOCAL_RECORDS, JSON.stringify(updated));
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * 서버(Google Apps Script)에 저장된 기록을 실시간으로 조회하여 특정 레코드의 저장 여부를 검증합니다.
+ * (GET 요청은 브라우저에서 CORS가 지원되므로 실제 데이터를 직접 읽어 대조합니다)
+ */
+export async function verifyRecordOnServer(
+  record: GameRecord
+): Promise<{ verified: boolean; error?: string; serverRecord?: any }> {
+  const webAppUrl = getSheetsWebAppUrl();
+  if (!webAppUrl || !webAppUrl.startsWith('https://script.google.com')) {
+    return { verified: false, error: '유효한 Web App URL이 아닙니다.' };
+  }
+
+  try {
+    const queryUrl = `${webAppUrl}?action=read&name=${encodeURIComponent(record.name)}`;
+    const res = await fetch(queryUrl, {
+      method: 'GET',
+      mode: 'cors'
+    });
+
+    if (!res.ok) {
+      return { verified: false, error: `서버 응답 오류 (HTTP ${res.status})` };
+    }
+
+    const json = await res.json();
+    if (!json || !json.success || !Array.isArray(json.records)) {
+      return { verified: false, error: '서버 데이터 형식이 올바르지 않습니다.' };
+    }
+
+    // 서버 레코드 목록에서 일치하는 기록 검색 (이름 일치 + 플레이 카운트 또는 일시 날짜 일치)
+    const match = json.records.find((r: any) => {
+      const nameMatch = String(r.name || '').trim() === record.name.trim();
+      const playMatch = Number(r.play_count) === Number(record.play_count);
+      const timeMatch =
+        record.timestamp &&
+        r.timestamp &&
+        String(r.timestamp).includes(record.timestamp.substring(0, 10));
+      return nameMatch && (playMatch || timeMatch);
+    });
+
+    if (match) {
+      return { verified: true, serverRecord: match };
+    }
+
+    return { verified: false, error: '시트에서 일치하는 기록을 찾지 못했습니다 (반영 대기 중).' };
+  } catch (err: any) {
+    return { verified: false, error: err?.message || '네트워크 검증 오류' };
+  }
+}
+
+/**
+ * 모든 로컬 기록을 구글 시트 실제 데이터와 일괄 대조하여 동기화 상태를 최신화합니다.
+ */
+export async function verifyAllLocalRecords(): Promise<{
+  totalChecked: number;
+  verifiedCount: number;
+  pendingCount: number;
+  error?: string;
+}> {
+  const webAppUrl = getSheetsWebAppUrl();
+  if (!webAppUrl || !webAppUrl.startsWith('https://script.google.com')) {
+    return { totalChecked: 0, verifiedCount: 0, pendingCount: 0, error: 'URL 미설정' };
+  }
+
+  try {
+    const res = await fetch(`${webAppUrl}?action=read`, {
+      method: 'GET',
+      mode: 'cors'
+    });
+    if (!res.ok) {
+      return { totalChecked: 0, verifiedCount: 0, pendingCount: 0, error: `HTTP ${res.status}` };
+    }
+
+    const json = await res.json();
+    if (!json || !Array.isArray(json.records)) {
+      return { totalChecked: 0, verifiedCount: 0, pendingCount: 0, error: '데이터 형식 오류' };
+    }
+
+    const serverRecords = json.records;
+    const localList = getLocalRecords();
+    let verifiedCount = 0;
+    let pendingCount = 0;
+
+    const updated = localList.map(localRec => {
+      const matched = serverRecords.find((s: any) => {
+        const nameMatch = String(s.name || '').trim() === localRec.name.trim();
+        const playMatch = Number(s.play_count) === Number(localRec.play_count);
+        const timeMatch =
+          localRec.timestamp &&
+          s.timestamp &&
+          String(s.timestamp).includes(localRec.timestamp.substring(0, 10));
+        return nameMatch && (playMatch || timeMatch);
+      });
+
+      if (matched) {
+        verifiedCount++;
+        return {
+          ...localRec,
+          synced: true,
+          syncStatus: 'verified' as SyncStatus,
+          syncError: undefined,
+          lastCheckedAt: formatCurrentTimestamp()
+        };
+      } else if (localRec.syncStatus === 'pending_verify' || localRec.synced) {
+        pendingCount++;
+        return {
+          ...localRec,
+          synced: false,
+          syncStatus: 'pending_verify' as SyncStatus,
+          syncError: '전송됨 (시트 반영 대조 대기)'
+        };
+      }
+      return localRec;
+    });
+
+    localStorage.setItem(KEY_LOCAL_RECORDS, JSON.stringify(updated));
+    return {
+      totalChecked: localList.length,
+      verifiedCount,
+      pendingCount
+    };
+  } catch (err: any) {
+    return {
+      totalChecked: 0,
+      verifiedCount: 0,
+      pendingCount: 0,
+      error: err?.message || '네트워크 대조 중 오류 발생'
+    };
+  }
+}
+
 /**
  * 게임 결과 기록 (로컬 저장 + 구글 시트 전송 시도)
  * @param roundCorrect 해당 판 맞힌 단어 수
@@ -283,10 +434,11 @@ export async function recordGameSession(
     total_taps: totalTaps,
     sentence_tap_summary: sentenceTapSummary,
     sentence_stats: validSentenceStats,
-    synced: false
+    synced: false,
+    syncStatus: 'unsynced'
   };
 
-  // Save to local records list
+  // 1. 로컬 저장 (오프라인/네트워크 지연 시에도 유실 방지)
   try {
     const list = getLocalRecords();
     list.unshift(record);
@@ -295,45 +447,50 @@ export async function recordGameSession(
     // ignore
   }
 
-  // Google Sheets 전송 시도
+  // 2. Google Sheets 전송 시도
   console.log('[GoogleSheets] 학습 세션 기록 시작 -> 구글 시트 전송 시도');
   const syncResult = await sendRecordToGoogleSheets(record);
-  if (syncResult.success) {
-    record.synced = true;
-    try {
-      const list = getLocalRecords();
-      const updated = list.map(item => (item.id === record.id ? { ...item, synced: true } : item));
-      localStorage.setItem(KEY_LOCAL_RECORDS, JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-    console.log(`[GoogleSheets] ✅ 학습 기록이 구글 시트로 성공적으로 전송되었습니다! (이름: ${record.name}, 스테이지: ${record.stageLevel}, 정답: ${record.correct_count}, 오답: ${record.wrong_count})`);
-  } else {
-    console.error('[GoogleSheets] ❌ 구글 시트 동기화 실패 (오류 내용):', syncResult.error);
-  }
 
   return {
     record,
-    synced: syncResult.success,
+    synced: syncResult.status === 'verified',
     error: syncResult.error
   };
 }
 
 /**
- * 구글 시트로 레코드 전송 (Google Apps Script Web App 호출)
+ * 구글 시트로 레코드 전송 (Google Apps Script Web App 호출 및 실시간 검증)
  */
 export async function sendRecordToGoogleSheets(
-  record: GameRecord
-): Promise<{ success: boolean; error?: string }> {
+  record: GameRecord,
+  skipVerify = false
+): Promise<{ success: boolean; status: SyncStatus; isPending?: boolean; error?: string }> {
   const webAppUrl = getSheetsWebAppUrl();
   if (!webAppUrl || !webAppUrl.startsWith('https://script.google.com')) {
     const err = '구글 앱스 스크립트 웹 앱 URL이 등록되지 않았거나 올바르지 않습니다.';
     console.error('[GoogleSheets] URL 오류:', err, webAppUrl);
+    record.syncStatus = 'failed';
+    record.syncError = err;
+    record.synced = false;
+    updateSingleLocalRecord(record);
     return {
       success: false,
+      status: 'failed',
       error: err
     };
   }
+
+  // 중복 전송 방지: 이미 동일한 레코드가 전송 중인 경우 건너뜀
+  if (inFlightRecordIds.has(record.id)) {
+    console.warn('[GoogleSheets] 이미 전송 중인 레코드입니다:', record.id);
+    return {
+      success: true,
+      status: record.syncStatus || 'pending_verify',
+      isPending: true
+    };
+  }
+
+  inFlightRecordIds.add(record.id);
 
   const payload = {
     action: 'create',
@@ -354,7 +511,8 @@ export async function sendRecordToGoogleSheets(
 
   try {
     console.log(`[GoogleSheets] 구글 시트로 데이터 전송 중 (URL: ${webAppUrl}):`, payload.data);
-    // Google Apps Script Web App은 no-cors 모드로 전송하여 브라우저 CORS 차단을 방지합니다.
+
+    // 1. no-cors 모드로 POST 전송 (CORS 사전 차단 방지)
     await fetch(webAppUrl, {
       method: 'POST',
       mode: 'no-cors',
@@ -364,23 +522,64 @@ export async function sendRecordToGoogleSheets(
       body: JSON.stringify(payload)
     });
 
-    console.log('[GoogleSheets] ✅ fetch 요청 전송 완료 (시트에 기록 반영됨)');
-    return { success: true };
+    console.log('[GoogleSheets] no-cors 전송 요청 전달 완료. 상태: 확인 대기 중(pending_verify)');
+    
+    // no-cors 상태에서는 응답을 읽을 수 없으므로 무조건 성공으로 단정짓지 않고 "전송됨 (확인 대기)" 상태로 지정
+    record.syncStatus = 'pending_verify';
+    record.synced = false;
+    record.syncError = '전송 요청 완료 (시트 저장 대조 대기)';
+    updateSingleLocalRecord(record);
+
+    // 2. 실시간 검증 (skipVerify가 아닐 경우)
+    if (!skipVerify) {
+      // 구글 시트 I/O 처리를 위해 900ms 대기 후 GET 검증
+      await new Promise(resolve => setTimeout(resolve, 900));
+      const verifyRes = await verifyRecordOnServer(record);
+      
+      if (verifyRes.verified) {
+        console.log('[GoogleSheets] ✅ 구글 시트 저장 및 대조 확인 성공 (verified)!');
+        record.syncStatus = 'verified';
+        record.synced = true;
+        record.syncError = undefined;
+        record.lastCheckedAt = formatCurrentTimestamp();
+        updateSingleLocalRecord(record);
+        inFlightRecordIds.delete(record.id);
+        return { success: true, status: 'verified' };
+      }
+    }
+
+    inFlightRecordIds.delete(record.id);
+    return {
+      success: true,
+      status: 'pending_verify',
+      isPending: true,
+      error: '전송 요청이 전달되었으나, 시트 반영 확인 대기 중입니다.'
+    };
   } catch (err: any) {
+    inFlightRecordIds.delete(record.id);
+    const errMessage = err?.message || '네트워크 오류로 전송에 실패했습니다.';
     console.error('[GoogleSheets] ❌ fetch 전송 중 예외 오류 발생:', err);
+    record.syncStatus = 'failed';
+    record.synced = false;
+    record.syncError = errMessage;
+    updateSingleLocalRecord(record);
     return {
       success: false,
-      error: err?.message || '네트워크 오류로 전송에 실패했습니다.'
+      status: 'failed',
+      error: errMessage
     };
   }
 }
 
 /**
  * 구글 시트 웹앱 연결 테스트
+ * 1단계: GET ping으로 서버 도달성 및 CORS 권한 사전 확인
+ * 2단계: POST로 테스트 데이터 전송
+ * 3단계: GET read로 실제 시트에 저장되었는지 대조 검증
  */
 export async function testSheetsConnection(
   url: string
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string; isPending?: boolean }> {
   if (!url || !url.startsWith('https://script.google.com')) {
     return {
       success: false,
@@ -389,10 +588,28 @@ export async function testSheetsConnection(
   }
 
   try {
+    // 1단계: 서버 상태 확인 (GET ping)
+    console.log('[GoogleSheets Test] 1단계: 서버 상태 확인 (GET ping)...');
+    try {
+      const pingRes = await fetch(`${url}?action=ping`, { method: 'GET', mode: 'cors' });
+      if (!pingRes.ok) {
+        return {
+          success: false,
+          message: `❌ 웹 앱 서버 응답 오류 (HTTP ${pingRes.status}). Apps Script 배포 상태를 점검해 주세요.`
+        };
+      }
+    } catch (pingErr: any) {
+      return {
+        success: false,
+        message: '❌ Google Apps Script 웹 앱에 접근할 수 없습니다. URL 주소 및 Apps Script 배포 설정의 [액세스 권한: 모든 사용자 (Anyone)]을 확인해 주세요.'
+      };
+    }
+
+    // 2단계: 테스트 데이터 생성 및 POST 전송
     const testRecord: GameRecord = {
       id: 'test_' + Date.now(),
       timestamp: formatCurrentTimestamp(),
-      name: `${getStudentName()} (테스트 전송)`,
+      name: `${getStudentName()} (연동테스트)`,
       play_count: 1,
       correct_count: 1,
       wrong_count: 0,
@@ -421,6 +638,7 @@ export async function testSheetsConnection(
       ]
     };
 
+    console.log('[GoogleSheets Test] 2단계: 테스트 데이터 POST 전송...');
     await fetch(url, {
       method: 'POST',
       mode: 'no-cors',
@@ -435,6 +653,8 @@ export async function testSheetsConnection(
           play_count: testRecord.play_count,
           correct_count: testRecord.correct_count,
           wrong_count: testRecord.wrong_count,
+          stageLevel: testRecord.stageLevel,
+          result: testRecord.result,
           average_tap_count: testRecord.average_tap_count,
           total_taps: testRecord.total_taps,
           sentence_tap_summary: testRecord.sentence_tap_summary,
@@ -443,14 +663,39 @@ export async function testSheetsConnection(
       })
     });
 
+    // 3단계: 시트 저장 실시간 대조 검증 (GET read)
+    console.log('[GoogleSheets Test] 3단계: 시트 저장 실시간 대조 검증 중 (GET read)...');
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    try {
+      const readRes = await fetch(`${url}?action=read`, { method: 'GET', mode: 'cors' });
+      if (readRes.ok) {
+        const readJson = await readRes.json();
+        const found =
+          readJson &&
+          Array.isArray(readJson.records) &&
+          readJson.records.some((r: any) => String(r.name).includes(testRecord.name));
+
+        if (found) {
+          return {
+            success: true,
+            message: '✅ [검증 완료] 구글 시트로 데이터가 정상 전송되었고, 스프레드시트의 실제 저장 행이 확인되었습니다! (총 기록: ' + (readJson.totalCount || readJson.records.length) + '건)'
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     return {
       success: true,
-      message: '✅ 문장별 탭 빈도 및 평균 테스트 데이터가 구글 시트로 성공적으로 전송되었습니다! 구글 시트에서 행이 추가되었는지 확인해보세요.'
+      isPending: true,
+      message: 'ℹ️ [전송 완료] 서버로 테스트 데이터 전송 요청이 완료되었습니다. (시트 반영까지 수초 정도 소요될 수 있습니다. 스프레드시트를 새로고침하여 확인해 보세요.)'
     };
   } catch (err: any) {
     return {
       success: false,
-      message: '❌ 전송 실패: ' + (err?.message || '알 수 없는 오류')
+      message: '❌ 전송 실패: ' + (err?.message || '알 수 없는 네트워크 오류')
     };
   }
 }
@@ -566,12 +811,15 @@ function initSheetHeaders(sheet) {
     "play_count",
     "correct_count",
     "wrong_count",
+    "stage_level",
+    "result",
     "average_tap_count",
+    "total_taps",
     "sentence_tap_summary"
   ];
   sheet.appendRow(headers);
 
-  var headerRange = sheet.getRange(1, 1, 1, 7);
+  var headerRange = sheet.getRange(1, 1, 1, headers.length);
   headerRange.setBackground("#2563EB"); // Royal Blue
   headerRange.setFontColor("#FFFFFF");
   headerRange.setFontWeight("bold");
@@ -582,11 +830,14 @@ function initSheetHeaders(sheet) {
   sheet.setRowHeight(1, 38);
   sheet.setColumnWidth(1, 180); // timestamp
   sheet.setColumnWidth(2, 140); // name
-  sheet.setColumnWidth(3, 110); // play_count
-  sheet.setColumnWidth(4, 120); // correct_count
-  sheet.setColumnWidth(5, 120); // wrong_count
-  sheet.setColumnWidth(6, 140); // average_tap_count
-  sheet.setColumnWidth(7, 300); // sentence_tap_summary
+  sheet.setColumnWidth(3, 100); // play_count
+  sheet.setColumnWidth(4, 110); // correct_count
+  sheet.setColumnWidth(5, 110); // wrong_count
+  sheet.setColumnWidth(6, 100); // stage_level
+  sheet.setColumnWidth(7, 90);  // result
+  sheet.setColumnWidth(8, 140); // average_tap_count
+  sheet.setColumnWidth(9, 100); // total_taps
+  sheet.setColumnWidth(10, 320); // sentence_tap_summary
   sheet.setFrozenRows(1);
 }
 
@@ -629,35 +880,77 @@ function initSentenceSheetHeaders(sheet) {
 }
 
 /**
- * [CREATE] 1. 새 학습 기록 추가 (단일 행 저장 및 문장별 세부 저장)
+ * [CREATE] 1. 새 학습 기록 추가 (중복 방지, 메인 시트 10개 열 + 문장별 세부 저장)
  */
 function createRecord(data) {
   var sheet = getTargetSheet();
+  var lastRow = sheet.getLastRow();
   
   var timestamp = data.timestamp || Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
   var name = String(data.name || "초등3학년 탐험가").trim();
   var play_count = Number(data.play_count != null ? data.play_count : 1);
   var correct_count = Number(data.correct_count != null ? data.correct_count : 0);
   var wrong_count = Number(data.wrong_count != null ? data.wrong_count : 0);
+  var stageLevel = Number(data.stageLevel || 1);
+  var result = String(data.result || "win");
   var average_tap_count = Number(data.average_tap_count != null ? data.average_tap_count : 0);
+  var total_taps = Number(data.total_taps != null ? data.total_taps : 0);
   var sentence_summary = String(data.sentence_tap_summary || "");
 
-  var newRow = [timestamp, name, play_count, correct_count, wrong_count, average_tap_count, sentence_summary];
+  // [중복 저장 방지 검사] 최근 25개 행 검사
+  if (lastRow > 1) {
+    var checkCount = Math.min(lastRow - 1, 25);
+    var startRow = lastRow - checkCount + 1;
+    var recentValues = sheet.getRange(startRow, 1, checkCount, Math.min(sheet.getLastColumn(), 5)).getValues();
+
+    for (var r = recentValues.length - 1; r >= 0; r--) {
+      var rTime = String(recentValues[r][0] || "").trim();
+      var rName = String(recentValues[r][1] || "").trim();
+      var rPlay = Number(recentValues[r][2]);
+
+      // 학생 이름 + 플레이 횟수가 같고, 일시가 동일하거나 같은 분(minute) 내인 경우 중복으로 간주
+      if (rName === name && rPlay === play_count) {
+        if (rTime === timestamp || (timestamp && rTime.indexOf(timestamp.substring(0, 16)) !== -1)) {
+          return {
+            success: true,
+            duplicate: true,
+            message: "이미 저장된 학습 기록입니다 (중복 저장 방지됨).",
+            row: startRow + r,
+            data: { timestamp: timestamp, name: name, play_count: play_count }
+          };
+        }
+      }
+    }
+  }
+
+  // 메인 시트에 10개 열 저장
+  var newRow = [
+    timestamp,
+    name,
+    play_count,
+    correct_count,
+    wrong_count,
+    stageLevel,
+    result,
+    average_tap_count,
+    total_taps,
+    sentence_summary
+  ];
   sheet.appendRow(newRow);
 
-  var lastRow = sheet.getLastRow();
+  var newLastRow = sheet.getLastRow();
   var numCols = newRow.length;
-  var rowRange = sheet.getRange(lastRow, 1, 1, numCols);
+  var rowRange = sheet.getRange(newLastRow, 1, 1, numCols);
   rowRange.setHorizontalAlignment("center");
   rowRange.setVerticalAlignment("middle");
   
-  if (lastRow % 2 === 0) {
+  if (newLastRow % 2 === 0) {
     rowRange.setBackground("#F8FAFC");
   } else {
     rowRange.setBackground("#FFFFFF");
   }
 
-  // 문장별 세부 데이터(sentence_stats)가 있을 경우 문장별 탭 기록 시트에도 저장
+  // 문장별 세부 데이터(sentence_stats)가 있을 경우 [문장별_탭_기록] 시트에도 저장
   if (data.sentence_stats && Array.isArray(data.sentence_stats) && data.sentence_stats.length > 0) {
     try {
       var sentenceSheet = getSentenceSheet();
@@ -666,7 +959,7 @@ function createRecord(data) {
         var sRow = [
           timestamp,
           name,
-          data.stageLevel || 1,
+          stageLevel,
           (s.questionIndex != null ? s.questionIndex + 1 : i + 1),
           s.word || "",
           s.exampleSentence || "",
@@ -684,14 +977,17 @@ function createRecord(data) {
   return {
     success: true,
     message: "학습 기록 및 문장별 탭 빈도가 성공적으로 저장되었습니다.",
-    row: lastRow,
+    row: newLastRow,
     data: {
       timestamp: timestamp,
       name: name,
       play_count: play_count,
       correct_count: correct_count,
       wrong_count: wrong_count,
+      stageLevel: stageLevel,
+      result: result,
       average_tap_count: average_tap_count,
+      total_taps: total_taps,
       sentence_tap_summary: sentence_summary
     }
   };
@@ -704,19 +1000,27 @@ function readRecords(targetName) {
   var sheet = getTargetSheet();
   var lastRow = sheet.getLastRow();
   if (lastRow <= 1) {
-    return { success: true, count: 0, records: [], summary: {} };
+    return { success: true, totalCount: 0, count: 0, records: [], summary: {} };
   }
 
-  var values = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+  var numCols = Math.max(sheet.getLastColumn(), 5);
+  var values = sheet.getRange(2, 1, lastRow - 1, numCols).getValues();
   var records = [];
   var studentSummary = {};
 
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
     var sName = String(row[1] || "").trim();
+    if (!sName || sName === "name") continue; // 헤더 행 스킵
+
     var pCount = Number(row[2]) || 0;
     var cCount = Number(row[3]) || 0;
     var wCount = Number(row[4]) || 0;
+    var stageLvl = row.length > 5 && typeof row[5] === 'number' ? row[5] : (row.length > 6 ? row[5] : undefined);
+    var resVal = row.length > 6 && typeof row[6] === 'string' ? row[6] : undefined;
+    var avgTaps = row.length >= 8 && typeof row[7] === 'number' ? row[7] : (row.length >= 6 && typeof row[5] === 'number' ? row[5] : undefined);
+    var totTaps = row.length >= 9 && typeof row[8] === 'number' ? row[8] : undefined;
+    var sSummary = row.length >= 10 ? String(row[9] || "") : (row.length >= 7 ? String(row[6] || "") : "");
 
     var item = {
       rowIndex: i + 2,
@@ -724,7 +1028,12 @@ function readRecords(targetName) {
       name: sName,
       play_count: pCount,
       correct_count: cCount,
-      wrong_count: wCount
+      wrong_count: wCount,
+      stageLevel: stageLvl,
+      result: resVal,
+      average_tap_count: avgTaps,
+      total_taps: totTaps,
+      sentence_tap_summary: sSummary
     };
 
     if (!studentSummary[sName]) {
@@ -757,7 +1066,53 @@ function readRecords(targetName) {
 }
 
 /**
- * [UPDATE] 3. 특정 행의 기록 수정
+ * [VERIFY] 3. 특정 기록 저장 여부 대조 검증
+ */
+function verifyRecord(data) {
+  var sheet = getTargetSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    return { success: true, verified: false, message: "시트에 기록이 없습니다." };
+  }
+
+  var searchCount = Math.min(lastRow - 1, 30);
+  var startRow = lastRow - searchCount + 1;
+  var values = sheet.getRange(startRow, 1, searchCount, Math.min(sheet.getLastColumn(), 5)).getValues();
+  var targetName = String(data.name || "").trim();
+  var targetPlay = data.play_count != null ? Number(data.play_count) : null;
+  var targetTimestamp = String(data.timestamp || "").trim();
+
+  for (var i = values.length - 1; i >= 0; i--) {
+    var row = values[i];
+    var rTime = String(row[0] || "").trim();
+    var rName = String(row[1] || "").trim();
+    var rPlay = Number(row[2]) || 0;
+
+    var nameMatch = !targetName || rName === targetName;
+    var playMatch = targetPlay == null || rPlay === targetPlay;
+    var timeMatch = !targetTimestamp || rTime === targetTimestamp || (targetTimestamp && rTime.indexOf(targetTimestamp.substring(0, 10)) !== -1);
+
+    if (nameMatch && playMatch && timeMatch) {
+      return {
+        success: true,
+        verified: true,
+        rowIndex: startRow + i,
+        record: {
+          timestamp: row[0],
+          name: rName,
+          play_count: rPlay,
+          correct_count: Number(row[3]) || 0,
+          wrong_count: Number(row[4]) || 0
+        }
+      };
+    }
+  }
+
+  return { success: true, verified: false, message: "일치하는 기록을 찾지 못했습니다." };
+}
+
+/**
+ * [UPDATE] 4. 특정 행의 기록 수정
  */
 function updateRecord(rowIndex, data) {
   var sheet = getTargetSheet();
@@ -776,7 +1131,7 @@ function updateRecord(rowIndex, data) {
 }
 
 /**
- * [DELETE] 4. 특정 행 삭제
+ * [DELETE] 5. 특정 행 삭제
  */
 function deleteRecord(rowIndex) {
   var sheet = getTargetSheet();
@@ -819,6 +1174,9 @@ function doPost(e) {
       case "get":
         result = readRecords(data.name);
         break;
+      case "verify":
+        result = verifyRecord(data);
+        break;
       case "update":
         result = updateRecord(Number(data.rowIndex), data);
         break;
@@ -827,6 +1185,9 @@ function doPost(e) {
         break;
       case "summary":
         result = readRecords();
+        break;
+      case "ping":
+        result = { status: "online", service: "WORD VENTURE API", timestamp: new Date() };
         break;
       default:
         result = createRecord(data);
@@ -844,7 +1205,7 @@ function doPost(e) {
 }
 
 /**
- * 웹 앱 수신부: GET 요청 (상태 점검 및 간이 확인용)
+ * 웹 앱 수신부: GET 요청 (상태 점검 및 실시간 기록 조회/검증용)
  */
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || "ping";
@@ -852,11 +1213,13 @@ function doGet(e) {
 
   if (action === "read" || action === "summary") {
     result = readRecords(e.parameter ? e.parameter.name : null);
+  } else if (action === "verify") {
+    result = verifyRecord(e.parameter || {});
   } else {
     var sheet = getTargetSheet();
     result = {
       status: "online",
-      service: "WORD VENTURE Google Sheets Sync API",
+      service: "WORD VENTURE Google Sheets API",
       target: "초등 3학년 영어 단어 학습 기록",
       spreadsheetId: SPREADSHEET_ID,
       sheetName: sheet.getName(),
