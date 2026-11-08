@@ -97,7 +97,7 @@ export default function App() {
 
   // Start round for current level
   const handleStartGame = () => {
-    const words = getGameRoundWords(selectedMode);
+    const words = getGameRoundWords(selectedMode, level);
     setGameWords(words);
     setCurrentScreen('battle');
   };
@@ -176,7 +176,7 @@ export default function App() {
   // Proceed to next level
   const handleNextLevel = () => {
     playLevelUpSound();
-    const words = getGameRoundWords(selectedMode);
+    const words = getGameRoundWords(selectedMode, level);
     setGameWords(words);
     setCurrentScreen('battle');
   };
@@ -184,14 +184,14 @@ export default function App() {
   // Restart the level that was just cleared or failed
   const handleRestartClearedLevel = () => {
     setLevel(lastStats.level);
-    const words = getGameRoundWords(selectedMode);
+    const words = getGameRoundWords(selectedMode, lastStats.level);
     setGameWords(words);
     setCurrentScreen('battle');
   };
 
   // Restart current level
   const handleRestartCurrentLevel = () => {
-    const words = getGameRoundWords(selectedMode);
+    const words = getGameRoundWords(selectedMode, level);
     setGameWords(words);
     setCurrentScreen('battle');
   };
@@ -205,7 +205,7 @@ export default function App() {
     // If fewer than 10 wrong words, supplement with new words to make a fun round
     let roundWords = [...wrongList];
     if (roundWords.length < 10) {
-      const extra = getGameRoundWords(selectedMode).filter(
+      const extra = getGameRoundWords(selectedMode, level).filter(
         w => !roundWords.some(rw => rw.id === w.id)
       );
       roundWords = [...roundWords, ...extra.slice(0, 10 - roundWords.length)];

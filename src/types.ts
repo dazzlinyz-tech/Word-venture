@@ -26,6 +26,21 @@ export interface AvatarInfo {
   personality?: string;
 }
 
+export type WordCategory =
+  | 'animal'
+  | 'food'
+  | 'school'
+  | 'family'
+  | 'nature'
+  | 'emotion'
+  | 'daily'
+  | 'place'
+  | 'object'
+  | 'action'
+  | 'polysemy';
+
+export type WordDifficulty = 'early' | 'mid' | 'late';
+
 export interface WordItem {
   id: string;
   word: string;
@@ -35,7 +50,9 @@ export interface WordItem {
   polysemyHint?: string;
   exampleSentence: string;
   exampleTranslation: string;
-  category: 'daily' | 'polysemy' | 'nature' | 'action';
+  category: WordCategory;
+  difficulty?: WordDifficulty;
+  gradeLevel?: 3 | 4;
 }
 
 export type MonsterVisualType = 
